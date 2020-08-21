@@ -87,10 +87,10 @@ All of the code is executed via the `main.m` file, with the following steps.
     root_dir = [filesep ‘home’ filesep ‘rcerxr21’ filesep ‘DesiWork’ filesep ‘VRP’] 
     ```
 2.	Open Bloomberg Professional Service, you will need to retrieve historical data and store them in the `/Input`. 
-    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a .csv file name 10yRate.csv
-    2. Download US swap rate data for maturities 2y, 5y, 10y and export to a `.csv` file (e.g. USSW2 Curncy) named swapRates.csv  
+    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a .csv file name "10yRate.csv"
+    2. Download US swap rate data for maturities 2y, 5y, 10y and export to a `.csv` file (e.g. USSW2 Curncy) named "swapRates.csv"  
     3. Download US ATM swap implied volatility data for tenors 2y, 5y and 10y and terms 3m, 6m, 12m and 24m 
-    4. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to swapBlackIV.csv
+    4. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to "swapBlackIV.csv"
     5. Using a Normal distribution model (e.g. USSN0110 Curncy) and exporting IV data to "swapNormalIV.csv"
     6. Downloaded historical US VIX index data for the 3m, 6m and 1y term (e.g. VIX3M Index) and export to a `.csv` file name "VIX.csv"
 3.	Run the `main.m` file in the RAN terminal, you may opt to run it in an interactive environment or in batch
