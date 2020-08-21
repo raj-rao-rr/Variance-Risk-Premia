@@ -49,10 +49,10 @@ downloaded historical data from the US generic government 10y index rate
 downloaded historical data from the US VIX index
 
 `swapBlackIV.csv`
-downloaded historical ATM swaption implied volatility, using a black-scholes implied volatility model (%VOL) 
+downloaded historical ATM swaption implied volatility, using a black-scholes implied volatility model  
 
 `swapNormalIV.csv`
-downloaded historical ATM swaption implied volatility, using a normal implied volatility model (NVOL) 
+downloaded historical ATM swaption implied volatility, using a normal implied volatility model
 
 `swapRates.csv`
 downloaded historical USD swap data for select maturities 
