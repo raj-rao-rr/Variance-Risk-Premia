@@ -80,19 +80,19 @@ All graphs and tables are to be stored in the `/Output` folder or select sub-fol
 ## 4	Running Code
 All of the code is executed via the `main.m` file, with the following steps.
 
-1.	Open the `main.m` file and change the variable root_dir to reflect the proper directory where the code base is stored. 
+1.	Open the `main.m` file and change the variable `root_dir` to reflect the directory where the local repository is stored. 
 
     ```
     % %    e.g. directory of file is stored in /home/rcerxr21/DesiWork/VRP
     root_dir = [filesep ‘home’ filesep ‘rcerxr21’ filesep ‘DesiWork’ filesep ‘VRP’] 
     ```
-2.	Open Bloomberg Professional Service, you will need to retrieve historical data and store them in the `/Input`. 
-    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a .csv file name "10yRate.csv"
-    2. Download US swap rate data for maturities 2y, 5y, 10y and export to a `.csv` file (e.g. USSW2 Curncy) named "swapRates.csv"  
-    3. Download US ATM swap implied volatility data for tenors 2y, 5y and 10y and terms 3m, 6m, 12m and 24m 
-    4. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to "swapBlackIV.csv"
-    5. Using a Normal distribution model (e.g. USSN0110 Curncy) and exporting IV data to "swapNormalIV.csv"
-    6. Downloaded historical US VIX index data for the 3m, 6m and 1y term (e.g. VIX3M Index) and export to a `.csv` file name "VIX.csv"
+2.	Open Bloomberg Professional Service, you will need to retrieve historical data and store them in `/Input`. 
+    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a .csv file name "10yRate.csv" in ascending order (from latest to earliest date, e.g. 1996-2020)
+    2. Download US swap rate data for maturities 2y, 5y, 10y (e.g. USSW10 Curncy) and export to a `.csv` file named "swapRates.csv" in ascending order  
+    3. Download US ATM swap implied volatility data for tenors 2y, 5y and 10y and terms 3m, 6m, 12m and 24m in ascending order 
+        1. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to "swapBlackIV.csv"
+        2. Using a Normal distribution model (e.g. USSN0110 Curncy) and exporting IV data to "swapNormalIV.csv"
+    4. Downloaded historical US VIX index data for the 3m, 6m and 1y term (e.g. VIX3M Index) and export to a `.csv` file name "VIX.csv"
 3.	Run the `main.m` file in the RAN terminal, you may opt to run it in an interactive environment or in batch
 
     ```
@@ -100,8 +100,8 @@ All of the code is executed via the `main.m` file, with the following steps.
     $ matlab20a-batch-withemail 10 main.m 
     ```
 ## 5	Possible Extensions
-* Work on automatically pulling Bloomberg data over a given range when computing VRP measures. 
+* Work on automatically downloading Bloomberg data over a given range when computing VRP measures. 
 
 ## 6	Contributors
-* Rajesh Rao (Research Analyst 22’)
+* [Rajesh Rao](https://github.com/Raj9898) (Research Analyst 22’)
 
