@@ -30,13 +30,11 @@ end
 model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Offset', 0, ...
     'Distribution', 'Gaussian'); 
 
-rng default; % RNG control for reproducibility
-
 nTrials = 100;                     % number of independent random trials
-horizon = 506;                     % VaR forecast horizon (# observations)
+horizon = 504;                     % VaR forecast horizon (# observations)
 
 m1 = [3, 6, 12, 24];               % swap terms 3m; 6m; 12m; 24m
-mm = m1*21+2;                      % re-index for trading days
+mm = m1*21;                        % re-index for trading days
 
 rollWindow = 2137;                 % train first # sample data 
 
@@ -55,14 +53,16 @@ for t = 1:T-rollWindow-1
     for i = [1, 2, 3]  % index position of the 2y; 5y; 10y swap rate
         
         % presample innovations (returns matrix)
-        r = returns(1:t+rollWindow, i);
+        r = returns(t:t+rollWindow, i);
         
         % fitting the conditional variance model GARCH to data 
         EstMdl = estimate(model, r, 'Display', 'off');                      % surpress display of outputs for fit
         
+        rng default; % RNG control for reproducibility
+        
         % infer conditional variances from corresponding models
         v0 = infer(EstMdl, r);
-        
+ 
         % simualte nTrials of the GARCH(1,1) model with horizon obs. 
         vSim = simulate(EstMdl, horizon, 'NumPaths', nTrials, ...
             'E0', r, 'V0', v0);                                             % creates a horizon-by-nTrials matrix
@@ -125,17 +125,17 @@ disp('Annualized vol file has been created...');
 
 %% Sample Plot
 
-figure('visible', 'on'); 
-subplot(2,1,1); hold on; 
-plot(UB{:, 13}, UB{:, 1}, 'DisplayName', 'Upper Bounds')
-plot(SigA{:, 13}, SigA{:, 1}, 'DisplayName', '2y3m GARCH Vol')
-plot(LB{:, 13}, LB{:, 1}, 'DisplayName', 'Lower Bound')
-legend('show', 'location', 'northwest'); hold off; 
+% figure('visible', 'on'); 
+% subplot(2,1,1); hold on; 
+% plot(UB{:, 13}, UB{:, 1}, 'DisplayName', 'Upper Bounds')
+% plot(SigA{:, 13}, SigA{:, 1}, 'DisplayName', '2y3m GARCH Vol')
+% plot(LB{:, 13}, LB{:, 1}, 'DisplayName', 'Lower Bound')
+% legend('show', 'location', 'northwest'); hold off; 
 
-subplot(2,1,2);
-plot(swapData{rollWindow+2:end,1}, returns(rollWindow+1:end,1), ...
-    'DisplayName', 'Log Returns')
-legend('show', 'location', 'northwest')
+% subplot(2,1,2);
+% plot(swapData{rollWindow+2:end,1}, returns(rollWindow+1:end,1), ...
+%     'DisplayName', 'Log Returns')
+% legend('show', 'location', 'northwest')
 
 %%
 
