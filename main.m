@@ -4,7 +4,7 @@ clear; clc;
 
 %% set the primary directory to work in  
 root_dir = [filesep 'home' filesep 'rcerxr21' filesep 'DesiWork' ...
-    filesep 'VRP'];
+    filesep 'VRP_GIT'];
 cd(root_dir)    % enter the root directory 
 
 %% add paths to acess files

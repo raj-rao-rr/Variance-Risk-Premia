@@ -27,16 +27,15 @@ end
 %-------------------------------------------------------------
 
 % Garch(1,1) model with p=1 and q=1                                         (eGARCH suffers cond. var positivity error)
-model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Offset', 0, ...
-    'Distribution', 'Gaussian'); 
+model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', 'Gaussian'); 
 
-nTrials = 100;                     % number of independent random trials
+nTrials = 10000;                   % number of independent random trials
 horizon = 504;                     % VaR forecast horizon (# observations)
 
 m1 = [3, 6, 12, 24];               % swap terms 3m; 6m; 12m; 24m
 mm = m1*21;                        % re-index for trading days
 
-rollWindow = 2137;                 % train first # sample data 
+rollWindow = 2137;                 % train first 2137 sample data 
 
 %-------------------------------------------------------------
 SigmaF = zeros(T-rollWindow-1,12);  % initialize the size of the matrix 
@@ -46,46 +45,46 @@ SmaxF  = zeros(T-rollWindow-1,12);
 
 %% Monte Carlo Simulator (Volatility Model)
 
-tic     % time convention 
-for t = 1:T-rollWindow-1                      
+tic     % time convention    
+for t = 1:T-rollWindow-1                   
     propIndex = 1;           % index for tracking column position 
     
-    for i = [1, 2, 3]  % index position of the 2y; 5y; 10y swap rate
+    for i = [1, 2, 3]        % index position of the 2y; 5y; 10y swap rate
         
         % presample innovations (returns matrix)
-        r = returns(t:t+rollWindow, i);
+        r = returns(1:t+rollWindow, i);
         
         % fitting the conditional variance model GARCH to data 
         EstMdl = estimate(model, r, 'Display', 'off');                      % surpress display of outputs for fit
         
-        rng default; % RNG control for reproducibility
-        
         % infer conditional variances from corresponding models
         v0 = infer(EstMdl, r);
- 
+        
+        rng default; % RNG control for reproducibility
+        
         % simualte nTrials of the GARCH(1,1) model with horizon obs. 
-        vSim = simulate(EstMdl, horizon, 'NumPaths', nTrials, ...
-            'E0', r, 'V0', v0);                                             % creates a horizon-by-nTrials matrix
+        vSim = sqrt(simulate(EstMdl, horizon, 'NumPaths', nTrials, ...
+            'E0', r, 'V0', v0));                                            % sqrt to get conditional std. deviations
         
         % compute the average cond. variance across rows
         SS = mean(vSim, 2);                                                 % creates a horizon-by-1 matrix
-
+        
         %-------------- 95% confidence bounds ----------------
         Smin = prctile(vSim, 2.5, 2);                                       % calc. 2.5th percentile along rows
         Smax = prctile(vSim, 97.5, 2);                                      % calc. 97.5th percentile along rows
         %-----------------------------------------------------
         
         % iterate through the swap terms by modifying the index
-        for j=1:4        % mm = [65 128 254 506]       l  
-            SigmaF(t,propIndex) = mean(SS(1:mm(j)), 1);                     % assign by tenor then term                                             
-            SminF(t,propIndex)  = mean(Smin(1:mm(j)), 1);                   %    e.g. 2y3m, 2y6m, ...
-            SmaxF(t,propIndex)  = mean(Smax(1:mm(j)), 1);
+        for j=1:4        % mm = [63 126 252 504]       l  
+            SigmaF(t,propIndex) = mean(SS(1:mm(j)));                        % assign by tenor then term                                             
+            SminF(t,propIndex)  = mean(Smin(1:mm(j)));                      %    e.g. 2y3m, 2y6m, ...
+            SmaxF(t,propIndex)  = mean(Smax(1:mm(j)));
             propIndex = propIndex + 1;                                      % increment the column index 
         end
-
+        
     end
     
-    % sanity checking for runtime process (visual que)
+    % sanity checking for runtime process
     if mod(t, 50) == 0
         fprintf('t value is %d ...\n', t);
     end
@@ -122,20 +121,6 @@ disp('Daily vol file has been created...');
 
 save('Temp/SigA.mat','SigA','LB','UB');
 disp('Annualized vol file has been created...');
-
-%% Sample Plot
-
-% figure('visible', 'on'); 
-% subplot(2,1,1); hold on; 
-% plot(UB{:, 13}, UB{:, 1}, 'DisplayName', 'Upper Bounds')
-% plot(SigA{:, 13}, SigA{:, 1}, 'DisplayName', '2y3m GARCH Vol')
-% plot(LB{:, 13}, LB{:, 1}, 'DisplayName', 'Lower Bound')
-% legend('show', 'location', 'northwest'); hold off; 
-
-% subplot(2,1,2);
-% plot(swapData{rollWindow+2:end,1}, returns(rollWindow+1:end,1), ...
-%     'DisplayName', 'Log Returns')
-% legend('show', 'location', 'northwest')
 
 %%
 

@@ -45,7 +45,7 @@ for i = 1:3
     
         ref1 = ismember(blackVol{:,1}, SigA{:,end});                        % matching the forecast length to IV data
         ref2 = ismember(SigA{:,end}, blackVol{:,1});                        % matching the forecast length to IV data
-        date = blackVol{ref,1};                                             % defines the date index for vol forecasts
+        date = blackVol{ref1,1};                                             % defines the date index for vol forecasts
         
         % GARCH annualized measures 
         upper = UB{ref2, index};    % 97.5th percentile GARCH sim
@@ -70,7 +70,7 @@ for i = 1:3
             'LineStyle', '--', 'Color', 'k', 'LineWidth', 0.5); 
         
         title(strcat("Tenor ", tenors(i), "Y, Term ", termsID(j)));         % specify legend to match tenor and term
-        hold off; legend(h(2:end));                                         % specify the legend displays
+        hold off; legend(h(2:end), 'Location', 'northwest');                % specify the legend displays
     end
     
     outputFileName = strcat("Output/GARCH_Forecasts/Tenor", ...             % the name of the output file 
@@ -109,7 +109,7 @@ for i = 1:4
     lgd = legend(strcat("Tenor 2Y, Term ", termsID(i)), ...
                  strcat("Tenor 5Y, Term ", termsID(i)), ...
                  strcat("Tenor 10Y, Term ", termsID(i)), ...
-                 'Location', 'southwest');
+                 'Location', 'northwest');
     lgd.FontSize = 8;       % setting the font-size of the legend
     hold off; 
 end
@@ -166,14 +166,13 @@ for i = 1:3
         strcat("5y,", termsID(i)), 'color', [0.8500, 0.3250, 0.0980]); 
     plot(date, vrp{:, swap10y}, 'DisplayName', ...
         strcat("10y,", termsID(i)), 'color', 'green');
-    
-    % plots the VIX index at specific maturity
-    vixName = strcat("VIX", termsID(i), "Index");
-    startIndex = length(vixData{:,1}) - length(date) + 1;                   % reduce the starting index of the date
-    plot(date, vixData{startIndex:end, vixName}, ...                        % selecting date range to match IV measures
+
+    % plot the VIX measure
+    vixName = strcat("VIX", "Index");
+    plot(vixData{:, 1}, vixData{:, vixName}, ...                            % selecting date range to match IV measures
         'DisplayName', vixName, 'color', 'black');
     
-    legend show;
+    legend('show', 'location', 'southwest', 'fontsize', 7);
     hold off; 
 end
 

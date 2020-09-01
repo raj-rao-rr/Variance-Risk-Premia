@@ -156,7 +156,7 @@ disp('Swaption term structure was created...');
 
 %% Swaption Implied Vol vs. VIX
 
-f3 = figure('visible', 'off');                 % prevent display to MATLAB 
+f3 = figure('visible', 'on');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1250, 900]);   % setting figure dimensions
 
 for i = 1:3
@@ -166,7 +166,7 @@ for i = 1:3
     swap10y = strcat("USSV", terms(i), tenors(3), "Curncy");
     
     % select the appropriate VIX measure to compare swap vols
-    vixMeasure = vixData{:, strcat('VIX', termsID(i), 'Index')};
+    vixMeasure = vixData{:, 2};
     
     % select the appropriate swap iv terms
     volMeasure = blackVol{:, [swap2y, swap5y, swap10y]};
@@ -184,7 +184,7 @@ for i = 1:3
     lgd = legend(strcat("Tenor 2Y, Term ", termsID(i)), ...
                  strcat("Tenor 5Y, Term ", termsID(i)), ...
                  strcat("Tenor 10Y, Term ", termsID(i)), ... 
-                 strcat("VIX ", termsID(i), ' (right)'), ...
+                 strcat("VIX Index", ' (right)'), ...
                  'Location', 'northwest');
     lgd.FontSize = 8;       % setting the font-size of the legend
 end

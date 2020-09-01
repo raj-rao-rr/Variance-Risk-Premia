@@ -26,7 +26,7 @@ index = 1;
 for T = 1:length(tenors)
     for t = 1:length(terms)
         name = strcat("USSV", terms(t), tenors(T), "Curncy");               % determine security name
-       
+
         vrp(:, index) = estVol.(name) - impVol.(name);                      % compute VRP measure and assign to matrix
         index = index + 1; 
     end 
