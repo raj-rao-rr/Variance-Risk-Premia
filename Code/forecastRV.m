@@ -27,7 +27,8 @@ end
 %-------------------------------------------------------------
 
 % Garch(1,1) model with p=1 and q=1                                         (eGARCH suffers cond. var positivity error)
-model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', 'Gaussian'); 
+model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', ...
+    'Gaussian', 'Offset', NaN); 
 
 nTrials = 10000;                   % number of independent random trials
 horizon = 504;                     % VaR forecast horizon (# observations)

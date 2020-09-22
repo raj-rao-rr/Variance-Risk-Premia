@@ -45,14 +45,15 @@ for i = 1:3
     
         ref1 = ismember(blackVol{:,1}, SigA{:,end});                        % matching the forecast length to IV data
         ref2 = ismember(SigA{:,end}, blackVol{:,1});                        % matching the forecast length to IV data
-        date = blackVol{ref1,1};                                             % defines the date index for vol forecasts
+        date = blackVol{ref1,1};                                            % defines the date index for vol forecasts
         
         % GARCH annualized measures 
         upper = UB{ref2, index};    % 97.5th percentile GARCH sim
         mid = SigA{ref2, index};    % mean / 50th percentile
         lower = LB{ref2, index};    % 2.5th percentile GARCH sim
-
-        iv = blackVol{ref1, index};                                         % implied volatility data       
+        
+        % implied volatility data (black-scholes)  
+        iv = blackVol{ref1, index};                                            
 
         h = zeros(1,4);            % plot-figure object matrix
         
@@ -100,10 +101,15 @@ for i = 1:4
     % defines the date index for volatility measures
     date = vrp{:,1};
     
+    % compute the average VRP over the plot period
+    avgVRP = mean(mean(vrp{:, [swap2y, swap5y, swap10y]}, 2));
+    disp(avgVRP)
     % plotting the vrp measures for each tenor at a term 
     plot(date, vrp{:, swap2y}, 'color', 'blue');
     plot(date, vrp{:, swap5y}, 'color', 'red'); 
     plot(date, vrp{:, swap10y}, 'color', 'green');
+    plot(date, ones(1, length(date))*avgVRP, 'color', 'black', ...
+        'linestyle', '--', 'linewidth', 2);
     
     % show the legend for the underlying series
     lgd = legend(strcat("Tenor 2Y, Term ", termsID(i)), ...

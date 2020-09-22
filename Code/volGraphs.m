@@ -156,7 +156,7 @@ disp('Swaption term structure was created...');
 
 %% Swaption Implied Vol vs. VIX
 
-f3 = figure('visible', 'on');                 % prevent display to MATLAB 
+f3 = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1250, 900]);   % setting figure dimensions
 
 for i = 1:3

@@ -17,9 +17,9 @@ addpath([root_dir filesep 'Output'])
 save 'Temp/INIT.mat' root_dir
 
 %% running project scripts in linear order 
-run('dataReader.m');
-run('genTable.m');
-run('volGraphs.m');
+% run('dataReader.m');
+% run('genTable.m');
+% run('volGraphs.m');
 run('forecastRV.m');
 run('vrpPremium.m');
 run('vrpGraphs.m');
