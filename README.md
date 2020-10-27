@@ -89,7 +89,7 @@ All of the code is executed via the `main.m` file, with the following steps.
 2.	Open Bloomberg Professional Service, you will need to retrieve historical data and store them in `/Input`. 
     1. Download the US treasury Government 10 index (USGG10YR Index) and export to a `.csv` file name "10yRate.csv" in ascending order (from latest to earliest date, e.g. 1996-2020)
     2. Download US swap rate data for maturities 2y, 5y, 10y (e.g. USSW10 Curncy) and export to a `.csv` file named **swapRates.csv** in ascending order  
-    3. Download US ATM swap implied volatility data for tenors 2y, 5y and 10y and terms 3m, 6m, 12m and 24m in ascending order 
+    3. Download US ATM swap implied volatility data for swap tenors 2y, 5y and 10y and expiry 3m, 6m, 12m and 24m in ascending order 
         1. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to **swapBlackIV.csv**
         2. Using a Normal distribution model (e.g. USSN0110 Curncy) and exporting IV data to **swapNormalIV.csv**
     4. Downloaded historical US VIX index data and export to a `.csv` file name **VIX.csv**
