@@ -34,7 +34,6 @@ legend show; hold off;
 exportgraphics(f0, 'Output/black_normal_vol.jpg');
 disp('Implied Vol comparisons were created...');
 
-
 %% Swaption Implied Volatilities (Figure 1)
 
 f1 = figure('visible', 'off');                 % prevent display to MATLAB 

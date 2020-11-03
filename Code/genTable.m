@@ -52,8 +52,3 @@ descriptStat = table(names, meanV, stdV, kurtV, skewV, ...
 
 disp('Descriptive stats computed...');
 writetable(descriptStat, 'Output/descriptiveStats.csv');
-
-                 
-
-
-

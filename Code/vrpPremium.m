@@ -30,6 +30,8 @@ for T = 1:length(tenors)
         vrp(:, index) = estVol.(name) - impVol.(name);                      % compute VRP measure and assign to matrix
         index = index + 1; 
     end 
+    disp(name)
+    disp(estVol.(name)); disp(impVol.(name))
 end
 
 vrp = array2table(vrp);     % convert matrix to table

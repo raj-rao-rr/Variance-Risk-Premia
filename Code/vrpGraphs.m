@@ -27,8 +27,8 @@ names = vrp.Properties.VariableNames(2:end);
 %% Swaption Implied Vol vs. Forecasted Real Vol (Figure 3)
 
 % check to see if the directory exists, if not create it
-if ~exist('Output/GARCH_Forecasts/', 'dir')
-    mkdir Output/GARCH_Forecasts/                                         
+if ~exist('Output/garchForecasts/', 'dir')
+    mkdir Output/garchForecasts/                                         
 end
 
 % incrementing across each tenor (e.g. 2y, 5y)
@@ -74,17 +74,16 @@ for i = 1:3
         hold off; legend(h(2:end), 'Location', 'northwest');                % specify the legend displays
     end
     
-    outputFileName = strcat("Output/GARCH_Forecasts/Tenor", ...             % the name of the output file 
+    outputFileName = strcat("Output/garchForecasts/Tenor", ...             % the name of the output file 
             tenors(i), "y.png"); 
     exportgraphics(fig, outputFileName);
 end
 
-addpath([root_dir filesep 'Output' filesep 'GARCH_Forecasts'])              % add the paths of GARCH forecast graphs
+addpath([root_dir filesep 'Output' filesep 'garchForecasts'])               % add the paths of GARCH forecast graphs
 disp('GARCH graphs were created...');
 
 
 %% Variance Risk Premia (Figure 4)
-
 
 f4 = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
@@ -103,7 +102,8 @@ for i = 1:4
     
     % compute the average VRP over the plot period
     avgVRP = mean(mean(vrp{:, [swap2y, swap5y, swap10y]}, 2));
-    disp(avgVRP)
+    % disp(avgVRP)
+    
     % plotting the vrp measures for each tenor at a term 
     plot(date, vrp{:, swap2y}, 'color', 'blue');
     plot(date, vrp{:, swap5y}, 'color', 'red'); 
@@ -174,9 +174,8 @@ for i = 1:3
         strcat("10y,", termsID(i)), 'color', 'green');
 
     % plot the VIX measure
-    vixName = strcat("VIX", "Index");
-    plot(vixData{:, 1}, vixData{:, vixName}, ...                            % selecting date range to match IV measures
-        'DisplayName', vixName, 'color', 'black');
+    plot(vixData{:, 1}, vixData{:, 2}, ...                                  % selecting date range to match IV measures
+        'DisplayName', 'VIX Index', 'color', 'black');
     
     legend('show', 'location', 'southwest', 'fontsize', 7);
     hold off; 
@@ -184,4 +183,3 @@ end
 
 exportgraphics(f6, 'Output/vrp_vs_vix.jpg');
 disp('VRP vs. VIX graphs were created...');
-
