@@ -7,11 +7,11 @@ The variance risk premia (VRP) measures the amount investors are willing to pay 
 *	MATLAB 2020a with the following toolboxes (Econometrics, Optimization, Financial
 * Python 3.6 with the followinh libraries (Pandas)
 *	Bloomberg Professional Services or Refinitiv (formerly Thomson Reuters) for historical data
-*	System environment with 2 GB of memory
+*	Matlab system environment with 2 GB of memory
 
 ## 3	Code Structure
 ### 3.1 	Outline
-The code base follows a linear order of execution, starting with the `main.m` file. 
+The project code follows a linear order of execution, starting with the `main.m` file. 
 
 - main.m
   - Temp/INIT.mat
@@ -34,14 +34,14 @@ The code base follows a linear order of execution, starting with the `main.m` fi
     - Output/figure4.jpg
     - Output/Autocorrelations/
     - Output/figure6.jpg
-  - Code/vrpPremium.m
+  - Code/macroRegress.m
     - Output/MacroRegressions/
 
 ### 3.2 	`/Code`
-All project code is stored in the `/Code` folder, and is responsible for forecasting annualized volatility, generating figures and performing regression on select risk premia measure.
+All project code is stored in the `/Code` folder, and is responsible for generating figures, graphs and analysis on implied volatility.
 
 ### 3.3 	`/Input`
-
+Folder for all unfiltered, raw input data for financial time series. 
 - **10yRate.csv** downloaded historical data from the US generic government 10y index rate
 - **VIX.csv** downloaded historical data from the US VIX index
 - **swapBlackIV.csv** downloaded historical ATM swaption implied volatility, using a black-scholes implied volatility model  
@@ -49,7 +49,7 @@ All project code is stored in the `/Code` folder, and is responsible for forecas
 - **swapRates.csv** downloaded historical USD swap data for select maturities 
 
 ### 3.4 	`/Temp`
-
+Folder for storing data files after being read and cleaned of missing/obstructed values.
 - **INIT.mat** stores initializing variables for the code base (e.g. root directory)
 - **DATA.mat** stores the downloaded data from input files (e.g. swap rates, swaption IV)
 - **VRP.mat** stores the computed variance risk premia measures for each tenor and term
@@ -57,7 +57,7 @@ All project code is stored in the `/Code` folder, and is responsible for forecas
 - **SigA.mat** stores the annualized GARCH(1,1) volatility forecast, including 95% bounds
 
 ### 3.5 	`/Output`
-All graphs and tables are stored in the `/Output` folder or within select sub-folders with figure identifiers referencing their location in the paper 
+Graphs (.jpgs) and tables reflected within the paper are housed with their figure identification. Additional sub-folders are provided to store forecasts, regressions and autocorrelations.  
 - **/garchForecasts** stores all GARCH forecasts for each swap tenor, across term structure
 - **/MacroRegressions** stores .csv files for each swaption security VRP measures, regressed against macro-economic variables
 - **/Autocorrelations** stores all autocorrelation figures associated with each swaption security VRP measures
@@ -71,8 +71,8 @@ All of the code files are executed from the `main.m` file. The following steps b
     % %    e.g. directory of file is stored in /home/rcerxr21/DesiWork/VRP
     root_dir = [filesep ‘home’ filesep ‘rcerxr21’ filesep ‘DesiWork’ filesep ‘VRP’] 
     ```
-2.	Open Bloomberg Professional Service or Refinitiv Datastream, you will need to retrieve historical data and store them in `/Input`. All data ranges should coincide with one another, such that their time horizons match and are aranged in ascending order (from latest to earliest date, e.g. 1996-2020). 
-    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a `.csv` file name _**TreasuryRate.csv**_ 
+2.	Open Bloomberg Professional Service or Refinitiv Datastream, you will need to retrieve historical data and store them in the `/Input` folder. All data ranges should coincide with one another, such that their time horizons match and are aranged in ascending order (from oldest to earliest date, e.g. 1996-2020). 
+    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a `.csv` file name _**TreasuryRate.csv**_
     2. Download US swap rate data for maturities 2y, 5y, 10y (e.g. USSW10 Curncy) and export to a `.csv` file named _**swapRates.csv**_   
     3. Download US ATM swap implied volatility data for swap tenors 2y, 5y and 10y and expiry 3m, 6m, 12m and 24m 
         1. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to _**swapBlackIV.csv**_
@@ -85,7 +85,7 @@ All of the code files are executed from the `main.m` file. The following steps b
     $ matlab20a-batch-withemail 10 main.m 
     ```
 ## 5	Possible Extensions
-* Work on automatically downloading Bloomberg data over a given range for specific tickers (e.g. USSV0110 Curncy = ATM Swaption 1y10y implied volatility)  
+* Work on automatically downloading historical Bloomberg data for specific tickers (e.g. USSV0110 Curncy = ATM Swaption 1y10y implied volatility)  
 
 ## 6	Contributors
 * [Rajesh Rao](https://github.com/Raj9898) (Research Analyst 22’)
