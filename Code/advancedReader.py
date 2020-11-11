@@ -29,24 +29,24 @@ ecoAnnounce = pd.read_csv(inputDirectory + 'ECO_release.csv')
 def accountsFix(elm):
     """
     Removes non-numeric characters from elements within reported data 
-    :param: elm = data from pandas dataframe, supports many types    ...: import r
-    
+    :param: elm (str, int, float) 
+        an element passed to extract necessary elements 
+    :returns: (str, int, float) 
+        a string representing a numerical quanity 
+
     e.g.
-        [In]: '3.4'
-        [Out]: '3.4'
+        [In]: '3.4'      ->  [Out]: '3.4'
         
-        [In]: '73.6k'
-        [Out]: '73.6'
+        [In]: '73.6k'    ->  [Out]: '73.6'
         
-        [In]: '-$113.5b'
-        [Out]: '-113.5'
+        [In]: '-$113.5b' ->  [Out]: '-113.5'
         
-        [In]: '-$113.5b'
-        [Out]: '-113.5'
+        [In]: '-$113.5b' ->  [Out]: '-113.5'
     """
+
     try:
+        # regex subset, extracting elements 0-9, '.' or '-' characters
         return re.sub("[^0-9|.|-]", "", elm)
-        
     except TypeError:
         return elm
 

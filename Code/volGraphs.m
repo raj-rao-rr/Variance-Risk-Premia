@@ -14,25 +14,25 @@ terms  = ["0C", "0F", "01", "02"];      % terms 3m; 6m; 1y; 2y
 termsID = ["3M", "6M", "1Y", "2Y"];
 
 
-%% Black Vol versus Normal Vol
+%% Black Vol versus Normal Vol (deprecated, only for illustrative use)
 
-f0 = figure('visible', 'off'); hold on; 
-set(gcf, 'Position', [100, 100, 950, 650]);    % setting figure dimensions
-
-blackVolName = strcat("USSV", terms(1), tenors(1), "Curncy");
-normalVolName = strcat("USSN", terms(1), tenors(1), "Curncy");
-
-plot(blackVol{:,1}, ...
-    blackVol{:, blackVol.Properties.VariableNames == blackVolName}, ...
-    'DisplayName', 'Black-Scholes Implied Vol');
-plot(normalVol{:,1}, ...
-    normalVol{:, normalVol.Properties.VariableNames == normalVolName}, ...
-    'DisplayName', 'Normal Implied Vol');
-
-legend show; hold off; 
-
-exportgraphics(f0, 'Output/black_normal_vol.jpg');
-disp('Implied Vol comparisons were created...');
+% f0 = figure('visible', 'off'); hold on; 
+% set(gcf, 'Position', [100, 100, 950, 650]);    % setting figure dimensions
+% 
+% blackVolName = strcat("USSV", terms(1), tenors(1), "Curncy");
+% normalVolName = strcat("USSN", terms(1), tenors(1), "Curncy");
+% 
+% plot(blackVol{:,1}, ...
+%     blackVol{:, blackVol.Properties.VariableNames == blackVolName}, ...
+%     'DisplayName', 'Black-Scholes Implied Vol');
+% plot(normalVol{:,1}, ...
+%     normalVol{:, normalVol.Properties.VariableNames == normalVolName}, ...
+%     'DisplayName', 'Normal Implied Vol');
+% 
+% legend show; hold off; 
+% 
+% exportgraphics(f0, 'Output/black_normal_vol.jpg');
+% disp('Implied Vol comparisons were created...');
 
 %% Swaption Implied Volatilities (Figure 1)
 
@@ -73,8 +73,8 @@ for i = 1:4
     hold off; 
 end
 
-exportgraphics(f1, 'Output/swaption_implied_volatilities.jpg');
-disp('Swaption vol graph was created...');
+exportgraphics(f1, 'Output/figure1.jpg');
+fprintf('Swaption volatility graph was created.\n');
 
 
 %% Swaption Implied Volatility Term Structure (specific periods)
@@ -150,7 +150,7 @@ end
 hold off;
 
 exportgraphics(f2, 'Output/swaption_iv_term_structure.jpg');
-disp('Swaption term structure was created...');
+fprintf('Swaption term structure was created.\n');
 
 
 %% Swaption Implied Vol vs. VIX
@@ -189,7 +189,7 @@ for i = 1:3
 end
 
 exportgraphics(f3, 'Output/vix_vs_iv.jpg');
-disp('VIX comparison graphs were created...');
+fprintf('VIX comparison graphs were created.\n');
 
 
 %% Swaption Implied Vol Structural Breaks (Figure 7)

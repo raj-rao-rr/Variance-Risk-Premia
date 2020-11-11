@@ -25,7 +25,7 @@ swapRates = swapData(:,2:end).Properties.VariableDescriptions;
 
 %% Economic Annoucements
 
-% run advanced reader script to clean economic variables
+% run advanced python reader script to clean economic variables
 !/apps/Anaconda3-2019.03/bin/python -b '/home/rcerxr21/DesiWork/VRP_GIT/Code/advancedReader.py'
 
 % manipulate economic data releases (Bloomberg - ECO)
@@ -56,9 +56,9 @@ keys = [{'CPUPXCHG Index'}, {'USURTOT Index'}, {'FDIDSGMO Index'}, ...
 
 ecoData = ecoData(ismember(ecoData{:, 'Ticker'}, keys), :);
 
-%% save all variables in *.mat file to be referenced
+%% Save all variables in *.mat file to be referenced
 
 save('Temp/DATA', 'blackVol',  'normalVol' , 'treasuryData', 'swapData', ...
      'vixData', 'swapRates', 'ecoData', 'keys')
  
-disp('Data has been downloaded...'); 
+fprintf('Data has been downloaded.\n'); 

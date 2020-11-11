@@ -43,8 +43,8 @@ for i = 1:3
         % naming convention for swap securities 
         index = strcat("USSV", terms(j), tenors(i), "Curncy");
     
-        ref1 = ismember(blackVol{:,1}, SigA{:,end});                        % matching the forecast length to IV data
-        ref2 = ismember(SigA{:,end}, blackVol{:,1});                        % matching the forecast length to IV data
+        ref1 = ismember(blackVol{:,1}, SigA{:,1});                          % matching the forecast length to IV data
+        ref2 = ismember(SigA{:,1}, blackVol{:,1});                          % matching the forecast length to IV data
         date = blackVol{ref1,1};                                            % defines the date index for vol forecasts
         
         % GARCH annualized measures 
@@ -80,7 +80,7 @@ for i = 1:3
 end
 
 addpath([root_dir filesep 'Output' filesep 'garchForecasts'])               % add the paths of GARCH forecast graphs
-disp('GARCH graphs were created...');
+fprintf('GARCH graphs were created.\n');
 
 
 %% Variance Risk Premia (Figure 4)
@@ -120,8 +120,8 @@ for i = 1:4
     hold off; 
 end
 
-exportgraphics(f4, 'Output/variance_risk_premia.jpg');
-disp('VRP graph was created...');
+exportgraphics(f4, 'Output/figure4.jpg');
+fprintf('Variance Risk Premia graph was created.\n');
 
 
 %% Autocorrelation Function for Variance Risk Premia (Figure 5)
@@ -145,7 +145,7 @@ for n = 1:length(names)
 end
 
 addpath([root_dir filesep 'Output' filesep 'Autocorrelations'])             % add the paths of autocorrelation folder
-disp('Autocorrelation graphs were created...');
+fprintf('Autocorrelation graphs were created.\n');
 
 
 %% Swaption Variance Risk Premia vs VIX (Figure 6)
@@ -181,5 +181,5 @@ for i = 1:3
     hold off; 
 end
 
-exportgraphics(f6, 'Output/vrp_vs_vix.jpg');
-disp('VRP vs. VIX graphs were created...');
+exportgraphics(f6, 'Output/figure6.jpg');
+fprintf('VRP vs. VIX graphs were created.\n');

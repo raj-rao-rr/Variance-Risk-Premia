@@ -5,6 +5,7 @@ clear;
 % loading in temp file 
 load DATA swapRates swapData
 
+
 %% Swap Log Return 
 
 [T,N] = size(swapData);
@@ -33,7 +34,7 @@ model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', ...
 options = optimoptions(@fmincon, 'Display' , 'off', 'Diagnostics', ...
     'off', 'Algorithm', 'sqp', 'TolCon', 1e-7);
 
-nTrials = 100;                     % number of independent random trials
+nTrials = 100;                    % number of independent random trials
 horizon = 504;                     % VaR forecast horizon (# observations)
 
 m1 = [3, 6, 12, 24];               % swap terms 3m; 6m; 12m; 24m
@@ -122,12 +123,20 @@ LB = array2table(LB, 'VariableNames', newNames);
 UB = array2table(UB, 'VariableNames', newNames);
 SigA.date = newDates; LB.date = newDates; UB.date = newDates;
 
+% reordering the date column and brining it to the top
+SigmaFA = [SigmaFA(:, end), SigmaFA(:, 1:end-1)];
+LBFA = [LBFA(:, end), LBFA(:, 1:end-1)];
+UBFA = [UBFA(:, end), UBFA(:, 1:end-1)];
+SigA = [SigA(:, end), SigA(:, 1:end-1)];
+LB = [LB(:, end), LB(:, 1:end-1)];
+UB = [UB(:, end), UB(:, 1:end-1)];
+
 % exporting GARCH forecasts
 save('Temp/FSigmaF.mat','SigmaFA','LBFA','UBFA');
-disp('Daily vol file has been created...');
+fprintf('Daily vol file has been created.\n');
 
 save('Temp/SigA.mat','SigA','LB','UB');
-disp('Annualized vol file has been created...');
+fprintf('Annualized vol file has been created.\n');
 
 %%
 

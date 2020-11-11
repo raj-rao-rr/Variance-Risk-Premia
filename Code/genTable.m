@@ -1,5 +1,4 @@
-% Generates tables that relate to volatility or premium computations (May
-% consider using Stata over the Matlab for tables)
+% Generates tables that relate to volatility or premium computations 
 
 clear; 
 
@@ -10,11 +9,7 @@ terms  = ["0C", "0F", "01", "02"];      % terms 3m; 6m; 12m; 24m
 termsID = ["3m", "6m", "12m", "24m"];
 
 
-%% 
-
-% --------------------------------------------------------------------
-%   Descriptive Statistics of Swaption Implied Volatilities (Table I)
-% --------------------------------------------------------------------
+%% Descriptive Statistics of Swaption Implied Volatilities (Table I)
 
 meanV = zeros(12,1); stdV  = zeros(12,1);
 kurtV = zeros(12,1); skewV = zeros(12,1);
@@ -50,5 +45,5 @@ descriptStat = table(names, meanV, stdV, kurtV, skewV, ...
                      'VariableNames', {'Swap Term/Tenor', 'Mean', ...
                                        'St. Dev', 'Kurtosis', 'Skewness'});
 
-disp('Descriptive stats computed...');
-writetable(descriptStat, 'Output/descriptiveStats.csv');
+fprintf('Descriptive stats computed.\n');
+writetable(descriptStat, 'Output/table1.csv');
