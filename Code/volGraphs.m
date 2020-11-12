@@ -34,7 +34,7 @@ termsID = ["3M", "6M", "1Y", "2Y"];
 % exportgraphics(f0, 'Output/black_normal_vol.jpg');
 % disp('Implied Vol comparisons were created...');
 
-%% Swaption Implied Volatilities (Figure 1)
+%% (Figure 1) Swaption Implied Volatilities 
 
 f1 = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 950, 650]);    % setting figure dimensions
@@ -192,7 +192,7 @@ exportgraphics(f3, 'Output/vix_vs_iv.jpg');
 fprintf('VIX comparison graphs were created.\n');
 
 
-%% Swaption Implied Vol Structural Breaks (Figure 7)
+%% (Figure 7) Swaption Implied Vol Structural Breaks 
 
 % Structural break points (in black dashed vertical lines),
 % determined by the methods developed in (Bai and Perron, 1998).

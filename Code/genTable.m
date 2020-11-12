@@ -9,7 +9,7 @@ terms  = ["0C", "0F", "01", "02"];      % terms 3m; 6m; 12m; 24m
 termsID = ["3m", "6m", "12m", "24m"];
 
 
-%% Descriptive Statistics of Swaption Implied Volatilities (Table I)
+%% (Table 1) Descriptive Statistics of Swaption Implied Volatilities 
 
 meanV = zeros(12,1); stdV  = zeros(12,1);
 kurtV = zeros(12,1); skewV = zeros(12,1);

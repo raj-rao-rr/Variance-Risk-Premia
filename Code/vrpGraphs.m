@@ -24,7 +24,7 @@ termsID = ["3M", "6M", "1Y", "2Y"];
 % security names for swaps 2y-10y
 names = vrp.Properties.VariableNames(2:end);
 
-%% Swaption Implied Vol vs. Forecasted Real Vol (Figure 3)
+%% (Figure 3) Swaption Implied Vol vs. Forecasted Real Vol 
 
 % check to see if the directory exists, if not create it
 if ~exist('Output/garchForecasts/', 'dir')
@@ -83,7 +83,7 @@ addpath([root_dir filesep 'Output' filesep 'garchForecasts'])               % ad
 fprintf('GARCH graphs were created.\n');
 
 
-%% Variance Risk Premia (Figure 4)
+%% (Figure 4) Variance Risk Premia 
 
 f4 = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
@@ -124,7 +124,7 @@ exportgraphics(f4, 'Output/figure4.jpg');
 fprintf('Variance Risk Premia graph was created.\n');
 
 
-%% Autocorrelation Function for Variance Risk Premia (Figure 5)
+%% (Figure 5) Autocorrelation Function for Variance Risk Premia 
 
 auto = figure('visible', 'off');               % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
@@ -148,7 +148,7 @@ addpath([root_dir filesep 'Output' filesep 'Autocorrelations'])             % ad
 fprintf('Autocorrelation graphs were created.\n');
 
 
-%% Swaption Variance Risk Premia vs VIX (Figure 6)
+%% (Figure 6) Swaption Variance Risk Premia vs VIX 
 
 f6 = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions

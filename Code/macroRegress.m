@@ -5,7 +5,7 @@ clear;
 load INIT root_dir
 
 % loading in economic and implied volatility data
-load DATA ecoData keys blackVol 
+load DATA ecoData keys blackVol econVars
 
 load SigA SigA 
 
@@ -20,7 +20,14 @@ if ~exist('Output/MacroRegressions/', 'dir')
     mkdir Output/MacroRegressions/                                         
 end
 
-addpath([root_dir filesep 'Output' filesep 'MacroRegressions'])             % add the paths of regression data
+% check to see if the directory exists, if not create it
+if ~exist('Output/MacroRegressions/Buckets/', 'dir')
+    mkdir Output/MacroRegressions/Buckets/                                         
+end
+
+addpath([root_dir filesep 'Output' filesep 'MacroRegressions'])             % add the paths for regression data
+addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
+    'Buckets'])                                                             % add the paths for std buckets
 
 %% Regression on Macro surprises 
 
@@ -33,14 +40,14 @@ disp('Macro regression .csv was created...');
 
 concatTB = regression(ecoData, blackVol);
 
-writetable(concatTB, 'Output/MacroRegressions/blackVolRegress.csv');
+writetable(concatTB, 'Output/MacroRegressions/ivRegress.csv');
 fprintf('Black volatility regression .csv was created.\n');
 
 %% Regression against underlying forecasted realized volatility 
 
 concatTB = regression(ecoData, SigA);
 
-writetable(concatTB, 'Output/MacroRegressions/garchRegress.csv');
+writetable(concatTB, 'Output/MacroRegressions/rvRegress.csv');
 fprintf('GARCH forecasted volatility regression .csv was created.\n');
 
 %% Tenor Structure for Events (using VRP)
@@ -50,34 +57,35 @@ vrpRegress = readtable('vrpRegress.csv');
 ivRegress = readtable('blackVolRegress.csv');
 rvRegress = readtable('garchRegress.csv');
 
-termStructure(vrpRegress, "vrp_pvalue_tstruct.jpg", 'off');
-termStructure(ivRegress, "iv_pvalue_tstruct.jpg", 'off');
-termStructure(rvRegress, "rv_pvalue_tstruct.jpg", 'off');
+termStructure(vrpRegress, "vrp_term_struct.jpg", 'off');
+termStructure(ivRegress, "iv_term_struct.jpg", 'off');
+termStructure(rvRegress, "rv_term_struct.jpg", 'off');
 
 fprintf('pValue Term structure graphs were created.\n');
 
 %% VRP buckets by STD (low 25% vs high 75%)
 
-fig = figure('visible', 'off');                % prevent display to MATLAB 
-set(gcf, 'Position', [100, 100, 1250, 900]);   % setting figure dimensions
-
 for i = 1:10
+    
+    fig = figure('visible', 'off');                 
+    set(gcf, 'Position', [100, 100, 800, 600]);   
+
     event = keys(i);
     
     % filter data by macro economic event
     filterData = ecoData(ismember(ecoData{:, 'Ticker'}, event), :);
     
-    % compute the top quarter and bottom quarter STD per event
+    % compute the top quarter and bottom quarter forecast STD per event
     bottom25 = quantile(filterData.StdDev, .25);
     top25 = quantile(filterData.StdDev, .75);
     
-    % bucket out economic figures according std value
+    % bucket out economic figures according to std value
     lowECO = filterData((filterData.StdDev <= bottom25), :);
     midECO = filterData((top25 > filterData.StdDev) & ...
         (filterData.StdDev > bottom25), :);
     highECO = filterData((filterData.StdDev >= top25), :);
     
-    % target dates for each STD period 
+    % match target dates for each STD period 
     lowDates = matchingError(lowECO, vrp);
     midDates = matchingError(midECO, vrp);
     highDates = matchingError(highECO, vrp);
@@ -92,7 +100,7 @@ for i = 1:10
     [midPosECO, midNegECO] = ecoSplits(eco2, 'Surprise');
     [highPosECO, highNegECO] = ecoSplits(eco3, 'Surprise');
     
-    % split vrp figures into positive and negative surprises 
+    % split vrp figures according to positive and negative surprises 
     [lowPosDiff, lowNegDiff] = volSplits(lowDiff, lowPosECO, ...
         lowNegECO, lowDates);
     [midPosDiff, midNegDiff] = volSplits(midDiff, midPosECO, ...
@@ -107,36 +115,24 @@ for i = 1:10
         mean(highPosDiff(:, :)), mean(highNegDiff(:, :))};
     
     % computes the simple average acroos row (per each date) - returns
-    % scaler output representing average VRP change
+    % scaler representing average VRP change across time and security
     simpleAvg = [mean(y{1, 1}), mean(y{1, 2}); mean(y{2, 1}), ...
         mean(y{2, 2}); mean(y{3, 1}), mean(y{3, 2})];
    
     % plotting out the bucket changes by positive/negative leaning
-    subplot(5, 4, i*2-1);                                                   % plot on odd subplots
-    bar(simpleAvg); title(event);
-    xticks([1, 2, 3]); xticklabels({'Low', 'Mid', 'High'});
-    lgd = legend({'(+)', '(-)'}, ...
+    bar(simpleAvg); title(strcat(econVars(i), ' Forecast'));
+    xticks([1, 2, 3]); xticklabels({'Low Std', 'Mid Std', 'High Std'});
+    ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
+    ylabel('Average VRP Change over Period');
+    lgd = legend({'Positive Surprise', 'Negative Surprise'}, ...
         'Location', 'best'); 
-    lgd.FontSize = 7;                                                       % setting the font-size of the legend
+    lgd.FontSize = 8;                                                       
     
-    subplot(5, 4, i*2); hold on;                                            % plot on even subplots
-    plot(reshape(mean([lowPosDiff; lowNegDiff]), 4, 3), ...
-        'LineStyle', '--', 'LineWidth', 2);
-    plot(reshape(mean([midPosDiff; midNegDiff]), 4, 3), ...
-        'LineStyle', ':', 'LineWidth', 2);
-    plot(reshape(mean([highPosDiff; highNegDiff]), 4, 3), ...
-        'LineStyle', '-.', 'LineWidth', 2);
-    xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '1y', '2y'});
-    hold off; 
+    name = strcat("Output/MacroRegressions/Buckets/", event, ".jpg");
+    exportgraphics(fig, name);
 end
 
-exportgraphics(fig, "Output/MacroRegressions/vrp_bucket_response.jpg");
 fprintf('VRP bucket reponse grpah were created.\n');
-
-%% Surface Measure across a Volatility Structure
-
-
-
 
 %% Function for Peforming Regressions on Macro Variables
 
@@ -191,8 +187,8 @@ end
 
 
 function [pos, neg] = volSplits(table, posEco, negEco, dates)
-%   Splits the volatility table into positive and negative components that
-%   adjust for surprises
+%   Splits the volatility table into days where economic surprises were 
+%   positive and negative 
 %   -------
 %   :param: table    -> type table
 %   :param: posEco   -> type table
@@ -319,13 +315,14 @@ function termStructure(tb, fileName, show)
 
         % construct the new modified subplots
         subplot(5,2,i); hold on;
-        plot(x2y{:, 'pValue'}, 'DisplayName', '2y Tenor', 'color', ...
+        plot(x2y{:, 'Estimate'}, 'DisplayName', '2y Tenor', 'color', ...
             'red', 'Marker', 'o');
-        plot(x5y{:, 'pValue'}, 'DisplayName', '5y Tenor', 'color', ...
+        plot(x5y{:, 'Estimate'}, 'DisplayName', '5y Tenor', 'color', ...
             'green', 'Marker', '+');
-        plot(x10y{:, 'pValue'}, 'DisplayName', '10y Tenor', 'color', ...
+        plot(x10y{:, 'Estimate'}, 'DisplayName', '10y Tenor', 'color', ...
             'blue', 'Marker', 'x');
         xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '1y', '2y'});
+        ylabel('Regression Coefficient');
         title(event);
 
         % show the legend for the underlying series
@@ -337,28 +334,3 @@ function termStructure(tb, fileName, show)
     exportgraphics(fig, exportName);
 
 end
-
-
-function surface(surfaceMatrix, event, show)
-%   Plots the surface of a given matrix, with swap term as y-height dim
-%   and x-column dim as option tenor
-%   -------
-%   :param: syrfaceMatrix       -> type matrix
-%   :param: event               -> type str (double qoutes "..")
-%   :param: show                -> type str (double qoutes "..")
-
-    % Constructing a surface plot of vectors to matrix  
-    if contains(show, 'on')
-        figure('visible', 'on');                                       
-    else
-        figure('visible', 'off');
-    end
-    
-    set(gcf, 'Position', [100, 100, 1000, 800]);   
-    surf(surfaceMatrix, 'FaceColor', 'red', 'FaceAlpha', 0.3);
-    name = strcat("VRP Surface for ", event, " (low std)"); title(name);
-    xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '1y', '2y'});
-    yticks([1, 2, 3]); yticklabels({'2y', '5y', '10y'});
-    xlabel('Option Tenor'); ylabel('Swap Term'); 
-end
-
