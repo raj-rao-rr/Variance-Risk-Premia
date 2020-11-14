@@ -15,15 +15,27 @@ load VRP vrp
 
 %% Initialization of variables and directories
 
-% check to see if the directory exists, if not create it
+% check to see if the following directories exists, if not create them
 if ~exist('Output/MacroRegressions/', 'dir')
     mkdir Output/MacroRegressions/                                         
 end
 
-% check to see if the directory exists, if not create it
 if ~exist('Output/MacroRegressions/Buckets/', 'dir')
-    mkdir Output/MacroRegressions/Buckets/                                         
+    mkdir Output/MacroRegressions/vrpBuckets/                                         
 end
+
+if ~exist('Output/MacroRegressions/vrpTermStruct/', 'dir')
+    mkdir Output/MacroRegressions/vrpTermStruct/                                         
+end
+
+if ~exist('Output/MacroRegressions/ivTermStruct/', 'dir')
+    mkdir Output/MacroRegressions/ivTermStruct/                                         
+end
+
+if ~exist('Output/MacroRegressions/rvTermStruct/', 'dir')
+    mkdir Output/MacroRegressions/rvTermStruct/                                         
+end
+
 
 addpath([root_dir filesep 'Output' filesep 'MacroRegressions'])             % add the paths for regression data
 addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
@@ -54,14 +66,14 @@ fprintf('GARCH forecasted volatility regression .csv was created.\n');
 
 % load in data from VRP regressed values 
 vrpRegress = readtable('vrpRegress.csv');
-ivRegress = readtable('blackVolRegress.csv');
-rvRegress = readtable('garchRegress.csv');
+ivRegress = readtable('ivRegress.csv');
+rvRegress = readtable('rvRegress.csv');
 
-termStructure(vrpRegress, "vrp_term_struct.jpg", 'off');
-termStructure(ivRegress, "iv_term_struct.jpg", 'off');
-termStructure(rvRegress, "rv_term_struct.jpg", 'off');
+termStructure(vrpRegress, "vrpTermStruct", econVars);
+termStructure(ivRegress, "ivTermStruct", econVars);
+termStructure(rvRegress, "rvTermStruct", econVars);
 
-fprintf('pValue Term structure graphs were created.\n');
+fprintf('Term structure graphs were created.\n');
 
 %% VRP buckets by STD (low 25% vs high 75%)
 
@@ -128,7 +140,7 @@ for i = 1:10
         'Location', 'best'); 
     lgd.FontSize = 8;                                                       
     
-    name = strcat("Output/MacroRegressions/Buckets/", event, ".jpg");
+    name = strcat("Output/MacroRegressions/vrpBuckets/", event, ".jpg");
     exportgraphics(fig, name);
 end
 
@@ -275,20 +287,15 @@ function concatTB = regression(X, y)
 end
 
 
-function termStructure(tb, fileName, show)
+function termStructure(tb, folder, econVars)
 %   Plots the term structure of p-Values for volatility measures regressed
 %   on economic surprises for a given security tier
 %   -------
 %   :param: tb       -> type table
 %   :param: fileName -> type str (double qoutes "..")
     
-    if contains(show, 'on')
-        fig = figure('visible', 'on');                                       
-    else
-        fig = figure('visible', 'off');
-    end
-    
-    set(gcf, 'Position', [100, 100, 1250, 900]);                            % setting figure dimensions
+    % refer to corrext directory to store images
+    directory = strcat('Output/MacroRegressions/', folder, '/');
     
     keys = unique(tb{:, 'Event'})';
     
@@ -304,7 +311,10 @@ function termStructure(tb, fileName, show)
     for i = 1:10
         % macro-variable event 
         event = keys(i);
-
+        
+        fig = figure('visible', 'off');
+        set(gcf, 'Position', [100, 100, 900, 700]);
+        
         % vrp regression filtered by security and event
         x2y = tb(ismember(tb{:, 'Security'}, tier1) ...
             & ismember(tb{:, 'Event'}, event), :);
@@ -314,7 +324,7 @@ function termStructure(tb, fileName, show)
             & ismember(tb{:, 'Event'}, event), :);
 
         % construct the new modified subplots
-        subplot(5,2,i); hold on;
+        hold on;
         plot(x2y{:, 'Estimate'}, 'DisplayName', '2y Tenor', 'color', ...
             'red', 'Marker', 'o');
         plot(x5y{:, 'Estimate'}, 'DisplayName', '5y Tenor', 'color', ...
@@ -323,14 +333,15 @@ function termStructure(tb, fileName, show)
             'blue', 'Marker', 'x');
         xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '1y', '2y'});
         ylabel('Regression Coefficient');
-        title(event);
+        title(econVars(i));
 
         % show the legend for the underlying series
         lgd = legend(); lgd.FontSize = 7;   
         hold off; 
+        
+        exportName = strcat(directory, event, '.jpg');
+        exportgraphics(fig, exportName);
     end
-    
-    exportName = strcat("Output/MacroRegressions/", fileName);
-    exportgraphics(fig, exportName);
 
 end
+

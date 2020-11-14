@@ -5,7 +5,7 @@ clear;
 load INIT root_dir
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol normalVol treasuryData vixData swapData
+load DATA blackVol normalVol treasuryData vixData swapData fedfunds
 
 % loading in temp file for GARCH forecasts
 load SigA SigA LB UB
@@ -82,10 +82,9 @@ end
 addpath([root_dir filesep 'Output' filesep 'garchForecasts'])               % add the paths of GARCH forecast graphs
 fprintf('GARCH graphs were created.\n');
 
-
 %% (Figure 4) Variance Risk Premia 
 
-f4 = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 for i = 1:4
@@ -120,14 +119,10 @@ for i = 1:4
     hold off; 
 end
 
-exportgraphics(f4, 'Output/figure4.jpg');
+exportgraphics(fig, 'Output/figure4.jpg');
 fprintf('Variance Risk Premia graph was created.\n');
 
-
 %% (Figure 5) Autocorrelation Function for Variance Risk Premia 
-
-auto = figure('visible', 'off');               % prevent display to MATLAB 
-set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 % check to see if the directory exists, if not create it
 if ~exist('Output/Autocorrelations/', 'dir')
@@ -135,22 +130,24 @@ if ~exist('Output/Autocorrelations/', 'dir')
 end
 
 for n = 1:length(names)
+    fig = figure('visible', 'off');                
+    set(gcf, 'Position', [100, 100, 1050, 850]);   
+
     % plotting the autocorrelation of each VRP measure 
     autocorr(vrp{:, names(n)}, 'NumLags', 50);  
     
     outputFileName = strcat("Output/Autocorrelations/", ...
         names(n), ".jpg");                                                  % the name of the output file 
           
-    exportgraphics(auto, outputFileName);
+    exportgraphics(fig, outputFileName);
 end
 
 addpath([root_dir filesep 'Output' filesep 'Autocorrelations'])             % add the paths of autocorrelation folder
 fprintf('Autocorrelation graphs were created.\n');
 
-
 %% (Figure 6) Swaption Variance Risk Premia vs VIX 
 
-f6 = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 for i = 1:3
@@ -181,5 +178,60 @@ for i = 1:3
     hold off; 
 end
 
-exportgraphics(f6, 'Output/figure6.jpg');
+exportgraphics(fig, 'Output/figure6.jpg');
 fprintf('VRP vs. VIX graphs were created.\n');
+
+%% Determing Interest Rate Regimes
+
+lowIR = fedfunds(fedfunds{:, 2} < 2,:);     % fed funds rate < 2%
+highIR = fedfunds(fedfunds{:, 2} > 5,:);    % fed funds rate > 5%
+
+%% (Figure 8) Cross-Section of Variance Risk Premia by Subsamples
+
+fig = figure('visible', 'off');                 % prevent display to MATLAB 
+set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
+
+subplot(3, 1, 1);
+lowVRP = vrp(ismember(vrp{:, 1}, lowIR{:, 1}), :);
+plot(reshape(mean(lowVRP{:, 2:end}), 4, 3)');
+xticks([1, 2, 3]); xticklabels(['2y', '5y', '10y']);
+title('High Interest Subsample');
+
+subplot(3, 1, 2);
+highVRP = vrp(ismember(vrp{:, 1}, highIR{:, 1}), :);
+plot(reshape(mean(highVRP{:, 2:end}), 4, 3)');
+xticks([1, 2, 3]); xticklabels(['2y', '5y', '10y']);
+title('Low Interest Subsample');
+
+subplot(3, 1, 3);
+plot(reshape(mean(vrp{:, 2:end}), 4, 3)');
+xticks([1, 2, 3]); xticklabels(['2y', '5y', '10y']);
+title('Full Subsample'); xlabel('Tenor in Years');
+
+exportgraphics(fig, 'Output/figure8.jpg');
+fprintf('Cross-Section of Variance Risk Premia were created.\n');
+
+%% (Figure 9) Term Structure of Variance Risk Premia by Subsamples
+
+fig = figure('visible', 'off');                 % prevent display to MATLAB 
+set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
+
+subplot(3, 1, 1);
+lowVRP = vrp(ismember(vrp{:, 1}, lowIR{:, 1}), :);
+plot(reshape(mean(lowVRP{:, 2:end}), 4, 3));
+xticks([1, 2, 3, 4]); xticklabels(termsID);
+title('High Interest Subsample');
+
+subplot(3, 1, 2);
+highVRP = vrp(ismember(vrp{:, 1}, highIR{:, 1}), :);
+plot(reshape(mean(highVRP{:, 2:end}), 4, 3));
+xticks([1, 2, 3, 4]); xticklabels(termsID);
+title('Low Interest Subsample');
+
+subplot(3, 1, 3);
+plot(reshape(mean(vrp{:, 2:end}), 4, 3));
+xticks([1, 2, 3, 4]); xticklabels(termsID);
+title('Full Subsample'); xlabel('Tenor in Years');
+
+exportgraphics(fig, 'Output/figure9.jpg');
+fprintf('Term Structure of Variance Risk Premia was created.\n');

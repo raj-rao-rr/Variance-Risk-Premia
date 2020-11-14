@@ -8,6 +8,7 @@ load DATA blackVol normalVol
 % loading in temp file for GARCh forecasts
 load SigA SigA 
 
+
 %% Common global variables
 
 tenors = ["2", "5", "10"];              % tenors 2y; 5y; 10y
@@ -25,9 +26,11 @@ index = 1;
 
 for T = 1:length(tenors)
     for t = 1:length(terms)
-        name = strcat("USSV", terms(t), tenors(T), "Curncy");               % determine security name
-
-        vrp(:, index) = estVol.(name) - impVol.(name);                      % compute VRP measure and assign to matrix
+        % determine security name
+        name = strcat("USSV", terms(t), tenors(T), "Curncy");               
+        
+        % compute VRP measure and assign to matrix
+        vrp(:, index) = estVol.(name) - impVol.(name);                      
         index = index + 1; 
     end 
 end

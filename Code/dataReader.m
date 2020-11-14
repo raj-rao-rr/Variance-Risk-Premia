@@ -4,6 +4,13 @@ clear;
 
 load INIT root_dir
 
+
+%% FRED Data set pulls for Fed Funds Rates
+
+fedfunds = readtable('EFFR.csv', 'PreserveVariableNames', true);            % N by 1 vector
+fedfunds{:, 1} = datetime(fedfunds{:, 1},'InputFormat','yyyy-MMM-dd');
+fedfunds = rmmissing(fedfunds);  
+
 %% Swap and Implied Volatility Data
 
 % read in data from .csv file as a table   
@@ -58,9 +65,20 @@ keys = [{'CPUPXCHG Index'}, {'USURTOT Index'}, {'FDIDSGMO Index'}, ...
 
 ecoData = ecoData(ismember(ecoData{:, 'Ticker'}, keys), :);
 
+%% Constricting the time horizon (comment out if ununsed)
+
+dateStop = '3/1/2020';
+
+swapData = swapData(swapData{:,1} < dateStop, :);
+treasuryData = treasuryData(treasuryData{:,1} < dateStop, :);
+normalVol = normalVol(normalVol{:,1} < dateStop, :);
+blackVol = blackVol(blackVol{:,1} < dateStop, :);
+ecoData = ecoData(ecoData{:,1} < dateStop, :);
+fedfunds = fedfunds(fedfunds{:,1} < dateStop, :);
+
 %% Save all variables in *.mat file to be referenced
 
 save('Temp/DATA', 'blackVol',  'normalVol' , 'treasuryData', 'swapData', ...
-     'vixData', 'swapRates', 'ecoData', 'keys', 'econVars')
+     'vixData', 'swapRates', 'ecoData', 'keys', 'econVars', 'fedfunds')
  
 fprintf('Data has been downloaded.\n'); 
