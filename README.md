@@ -79,7 +79,7 @@ All of the code files are executed from the `main.m` file. The following steps b
     ```
     
 ## 5	Possible Extensions
-* Work on automatically downloading Bloomberg data for specific tickers (e.g. USSV0110 Curncy = ATM Swaption 1y10y implied volatility)  
+* Work on automatically downloading Bloomberg data for specific tickers 
 * Try to automate EFFR data pulls from FRED on Matlab
 
 ## 6	Contributors
