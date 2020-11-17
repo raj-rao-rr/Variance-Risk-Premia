@@ -3,12 +3,14 @@
 clear; clc;
 
 %% set the primary directory to work in  
-root_dir = [filesep 'home' filesep 'rcerxr21' filesep 'DesiWork' ...
-    filesep 'VRP_GIT'];
-cd(root_dir)    % enter the root directory 
+root_dir = pwd;
+
+% enter the root directory 
+cd(root_dir)            
 
 %% add paths to acess files
 addpath([root_dir filesep 'Code'])
+addpath([root_dir filesep 'Code/lib'])                                      % library of additonal functions
 addpath([root_dir filesep 'Input'])
 addpath([root_dir filesep 'Temp'])
 addpath([root_dir filesep 'Output'])
@@ -20,6 +22,7 @@ save 'Temp/INIT.mat' root_dir
 % run('dataReader.m');
 % run('genTable.m');
 % run('volGraphs.m');
-run('forecastRV.m');
-run('vrpPremium.m');
-run('vrpGraphs.m');
+% run('forecastRV.m');
+% run('vrpPremium.m');
+% run('vrpGraphs.m');
+% run('macroRegress.m');

@@ -65,6 +65,11 @@ keys = [{'CPUPXCHG Index'}, {'USURTOT Index'}, {'FDIDSGMO Index'}, ...
 
 ecoData = ecoData(ismember(ecoData{:, 'Ticker'}, keys), :);
 
+%% Determing Interest Rate Regimes
+
+lowIR = fedfunds(fedfunds{:, 2} < 2,:);      % fed funds rate < 2%
+highIR = fedfunds(fedfunds{:, 2} >= 2,:);    % fed funds rate >= 2%
+
 %% Constricting the time horizon (comment out if ununsed)
 
 dateStop = '3/1/2020';
@@ -79,6 +84,7 @@ fedfunds = fedfunds(fedfunds{:,1} < dateStop, :);
 %% Save all variables in *.mat file to be referenced
 
 save('Temp/DATA', 'blackVol',  'normalVol' , 'treasuryData', 'swapData', ...
-     'vixData', 'swapRates', 'ecoData', 'keys', 'econVars', 'fedfunds')
+     'vixData', 'swapRates', 'ecoData', 'keys', 'econVars', 'fedfunds', ...
+     'lowIR', 'highIR')
  
 fprintf('Data has been downloaded.\n'); 

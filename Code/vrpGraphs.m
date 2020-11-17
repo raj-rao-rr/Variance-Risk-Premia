@@ -5,7 +5,8 @@ clear;
 load INIT root_dir
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol normalVol treasuryData vixData swapData fedfunds
+load DATA blackVol normalVol treasuryData vixData swapData fedfunds ...
+    lowIR highIR
 
 % loading in temp file for GARCH forecasts
 load SigA SigA LB UB
@@ -181,57 +182,91 @@ end
 exportgraphics(fig, 'Output/figure6.jpg');
 fprintf('VRP vs. VIX graphs were created.\n');
 
-%% Determing Interest Rate Regimes
-
-lowIR = fedfunds(fedfunds{:, 2} < 2,:);     % fed funds rate < 2%
-highIR = fedfunds(fedfunds{:, 2} > 5,:);    % fed funds rate > 5%
-
 %% (Figure 8) Cross-Section of Variance Risk Premia by Subsamples
 
-fig = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 subplot(3, 1, 1);
 lowVRP = vrp(ismember(vrp{:, 1}, lowIR{:, 1}), :);
-plot(reshape(mean(lowVRP{:, 2:end}), 4, 3)');
-xticks([1, 2, 3]); xticklabels(['2y', '5y', '10y']);
+Y = reshape(mean(lowVRP{:, 2:end}), 4, 3)';     % plotting values
+hold on;
+plot(Y(:,1), '-.', 'DisplayName', '3m', 'color', 'blue', 'marker', 's');
+plot(Y(:,2), '-.','DisplayName', '6m', 'color', 'red', 'marker', 'o');
+plot(Y(:,3), '-.', 'DisplayName', '12m', 'color', 'green', 'marker', 'd');
+plot(Y(:,4), '-.','DisplayName', '24m', 'color', 'magenta', 'marker', '*');
+hold off;
+xticks([1, 2, 3]); xticklabels({'2y', '5y', '10y'});
 title('High Interest Subsample');
+legend('location', 'best');
 
 subplot(3, 1, 2);
 highVRP = vrp(ismember(vrp{:, 1}, highIR{:, 1}), :);
-plot(reshape(mean(highVRP{:, 2:end}), 4, 3)');
-xticks([1, 2, 3]); xticklabels(['2y', '5y', '10y']);
+Y = reshape(mean(highVRP{:, 2:end}), 4, 3)';     % plotting values
+hold on;
+plot(Y(:,1), '-.', 'DisplayName', '3m', 'color', 'blue', 'marker', 's');
+plot(Y(:,2), '-.','DisplayName', '6m', 'color', 'red', 'marker', 'o');
+plot(Y(:,3), '-.', 'DisplayName', '12m', 'color', 'green', 'marker', 'd');
+plot(Y(:,4), '-.','DisplayName', '24m', 'color', 'magenta', 'marker', '*');
+hold off;
+xticks([1, 2, 3]); xticklabels({'2y', '5y', '10y'});
 title('Low Interest Subsample');
+legend('location', 'best');
 
 subplot(3, 1, 3);
-plot(reshape(mean(vrp{:, 2:end}), 4, 3)');
-xticks([1, 2, 3]); xticklabels(['2y', '5y', '10y']);
-title('Full Subsample'); xlabel('Tenor in Years');
+Y = reshape(mean(vrp{:, 2:end}), 4, 3)';        % plotting values
+hold on;
+plot(Y(:,1), '-.', 'DisplayName', '3m', 'color', 'blue', 'marker', 's');
+plot(Y(:,2), '-.','DisplayName', '6m', 'color', 'red', 'marker', 'o');
+plot(Y(:,3), '-.', 'DisplayName', '12m', 'color', 'green', 'marker', 'd');
+plot(Y(:,4), '-.','DisplayName', '24m', 'color', 'magenta', 'marker', '*');
+hold off;
+xticks([1, 2, 3]); xticklabels({'2y', '5y', '10y'});
+title('Full Subsample'); xlabel('Tenor (in years)');
+legend('location', 'best');
 
 exportgraphics(fig, 'Output/figure8.jpg');
 fprintf('Cross-Section of Variance Risk Premia were created.\n');
 
 %% (Figure 9) Term Structure of Variance Risk Premia by Subsamples
 
-fig = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 subplot(3, 1, 1);
 lowVRP = vrp(ismember(vrp{:, 1}, lowIR{:, 1}), :);
-plot(reshape(mean(lowVRP{:, 2:end}), 4, 3));
-xticks([1, 2, 3, 4]); xticklabels(termsID);
+Y = reshape(mean(lowVRP{:, 2:end}), 4, 3);     % plotting values
+hold on;
+plot(Y(:,1), '-.', 'DisplayName', '2y', 'color', 'blue', 'marker', 's');
+plot(Y(:,2), '-.','DisplayName', '5y', 'color', 'red', 'marker', 'o');
+plot(Y(:,3), '-.', 'DisplayName', '10y', 'color', 'green', 'marker', 'd');
+hold off;
+xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '12m', '24m'});
 title('High Interest Subsample');
+legend();
 
 subplot(3, 1, 2);
 highVRP = vrp(ismember(vrp{:, 1}, highIR{:, 1}), :);
-plot(reshape(mean(highVRP{:, 2:end}), 4, 3));
-xticks([1, 2, 3, 4]); xticklabels(termsID);
+Y = reshape(mean(highVRP{:, 2:end}), 4, 3);     % plotting values
+hold on;
+plot(Y(:,1), '-.', 'DisplayName', '2y', 'color', 'blue', 'marker', 's');
+plot(Y(:,2), '-.','DisplayName', '5y', 'color', 'red', 'marker', 'o');
+plot(Y(:,3), '-.', 'DisplayName', '10y', 'color', 'green', 'marker', 'd');
+hold off;
+xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '12m', '24m'});
 title('Low Interest Subsample');
+legend();
 
 subplot(3, 1, 3);
-plot(reshape(mean(vrp{:, 2:end}), 4, 3));
-xticks([1, 2, 3, 4]); xticklabels(termsID);
-title('Full Subsample'); xlabel('Tenor in Years');
+Y = reshape(mean(vrp{:, 2:end}), 4, 3);         % plotting values
+hold on;
+plot(Y(:,1), '-.', 'DisplayName', '2y', 'color', 'blue', 'marker', 's');
+plot(Y(:,2), '-.','DisplayName', '5y', 'color', 'red', 'marker', 'o');
+plot(Y(:,3), '-.', 'DisplayName', '10y', 'color', 'green', 'marker', 'd');
+hold off;
+xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '12m', '24m'});
+title('Full Subsample'); xlabel('Term (in months)');
+legend();
 
 exportgraphics(fig, 'Output/figure9.jpg');
 fprintf('Term Structure of Variance Risk Premia was created.\n');

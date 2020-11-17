@@ -23,7 +23,7 @@ left_color = [0 0 0];           % RGB for black
 right_color = [0 .5 .5];        % RGB for darker cyan
 
 % setting the color of the subplots axis
-set(f1,'defaultAxesColorOrder', [left_color; right_color]);
+set(fig,'defaultAxesColorOrder', [left_color; right_color]);
 
 for i = 1:4
     % construct the names for each swaption tenor 
