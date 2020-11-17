@@ -58,7 +58,7 @@ Graphs and tables reflected within the paper are labeled with their figure ident
 - **/Autocorrelations** stores all autocorrelation figures associated with each swaption security's VRP measure
 
 ## 4	Running Code
-All of the code files are executed from the `main.m` file. The following steps below illustrate the neccesary preprations, prior to execution of the `main.m` file.
+All of the code files are executed from the `main.m` file. The following steps below illustrate the neccesary data gathering steps, prior to execution.
 
 1.	Open Bloomberg Professional Service or Refinitiv Datastream, you will need to retrieve historical data and store them in the `/Input` folder. All data ranges should coincide with one another, such that their time horizons match and are aranged in ascending order (from oldest to earliest date, e.g. 1996-2020). 
     1. Download the US treasury Government 10 index (USGG10YR Index) and export to a `.csv` file name _**TreasuryRate.csv**_
