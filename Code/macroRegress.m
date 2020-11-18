@@ -231,15 +231,18 @@ for i = 1:10
             mean(y{2, 2}); mean(y{3, 1}), mean(y{3, 2})];
 
         % plotting out the bucket changes by positive/negative leaning
-        subplot(1, 2, index);
-        bar(simpleAvg); title(strcat(rateNames(index), ' Rate Environment'));
-        xticks([1, 2, 3]); xticklabels({'Low Std', 'Mid Std', 'High Std'});
-        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
-        xlabel('Forecast Standard Deviation', 'FontSize', 8);
-        lgd = legend({'Positive Surprise', 'Negative Surprise'}, ...
-            'Location', 'best'); 
-        lgd.FontSize = 8;                                                       
- 
+        if ~isnan(simpleAvg)
+            subplot(1, 2, index);
+            bar(simpleAvg); title(strcat(rateNames(index), ...
+                ' Rate Environment'));
+            xticks([1, 2, 3]); xticklabels({'Low Std', 'Mid Std', ...
+                'High Std'});
+            ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
+            xlabel('Forecast Standard Deviation', 'FontSize', 8);
+            lgd = legend({'Positive Surprise', 'Negative Surprise'}, ...
+                'Location', 'best'); 
+            lgd.FontSize = 8;                                                       
+        end
     end
     
     subplot(1, 2, 1);
@@ -262,7 +265,7 @@ addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
 
 for i = 1:10
     
-    fig = figure('visible', 'on');                 
+    fig = figure('visible', 'off');                 
     set(gcf, 'Position', [100, 100, 800, 600]);   
 
     event = keys(i);
@@ -316,18 +319,21 @@ fprintf('VRP time series graphs were created.\n');
 
 function targetDates = matchingError(base, target)
 %   Finds the intersection between both macro economic fields and the 
-%   implied volatility/varaince risk premia levels
+%   implied volatility/varaince risk premia levels provided
 %   -------
 %   :param: base   -> type table
+%       Economic annoucments that track a particular event
 %   :param: target -> type table
+%       Target variable measure to track against economic event
 
    % annoucement data for economic measurements 
    annoucements = base{:, 1};
 
-   % daily changes +/- day of release of annoucnemnt 
+   % daily changes +/- day from release of annoucnemnt 
+   % annoucement date EOD price - day prior EOD price
    post = target(ismember(target{:, 1}, annoucements), :);
    pre = target(ismember(target{:, 1}, annoucements-1), :);
-
+   
    % find the intersection between date ranges
    targetDates = intersect(post{:, 1}, pre{:, 1}+1);
 end
@@ -338,8 +344,11 @@ function [diff, eco] = volDiff(base, target, targetDate)
 %   as well as the filtered economic data 
 %   -------
 %   :param: base       -> type table
+%       Economic annoucments that track a particular event
 %   :param: target     -> type table
+%       Target variable measure to track against economic event
 %   :param: targetDate -> type datetime array
+%       Intersecting dates for variables vectors 
 
     % change in regressed values pre-post announcement 
     post = target(ismember(target{:, 1}, targetDate), :);

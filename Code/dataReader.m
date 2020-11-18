@@ -32,7 +32,8 @@ swapRates = swapData(:,2:end).Properties.VariableDescriptions;
 
 %% Economic Annoucements
 
-% run advanced python reader script to clean economic variables
+% run python script to clean economic variables with weird formats
+% e.g. Non-farm payrolls 735k -> Non-farm payrools 735
 !/apps/Anaconda3-2019.03/bin/python -b '/home/rcerxr21/DesiWork/VRP_GIT/Code/advancedReader.py'
 
 % manipulate economic data releases (Bloomberg - ECO)
