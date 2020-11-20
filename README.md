@@ -26,10 +26,10 @@ The project code follows a linear order of execution, starting with the `main.m`
   -> Code/macroRegress.m
 ```
 
-### 3.2 	`/Code/`
-All project code is stored in the `/Code/` folder and is responsible for generating figures, graphs and analysis on implied volatility.
+### 3.2 	`/Code`
+All project code is stored in the `/Code` folder and is responsible for generating figures, graphs and analysis on implied volatility.
 
-### 3.3 	`/Input/`
+### 3.3 	`/Input`
 Folder for all unfiltered, raw input data for financial time series. 
 - **10yRate.csv** historical timeseries data of the US generic government 10y index rate
 - **EFFR.csv** historical timeseries data of the effective fed funds rate
@@ -39,7 +39,7 @@ Folder for all unfiltered, raw input data for financial time series.
 - **swapNormalIV.csv** historical timeseries ATM swaption implied volatility, using a normal implied volatility model
 - **swapRates.csv** historical timeseries USD swap data for select maturities 
 
-### 3.4 	`/Temp/`
+### 3.4 	`/Temp`
 Folder for storing data files after being read and cleaned of missing/obstructed values.
 - **INIT.mat** stores initializing variables for the code base (e.g. root directory)
 - **DATA.mat** stores the downloaded data from input files (e.g. swap rates, swaption IV)
@@ -48,8 +48,8 @@ Folder for storing data files after being read and cleaned of missing/obstructed
 - **SigA.mat** stores the annualized GARCH(1,1) volatility forecast, including 95% bounds
 - **cleanECO.csv** stores cleaned economic annoucment data, storing striclty numerical values
 
-### 3.5 	`/Output/`
-Graphs and tables reflected within the paper are labeled with their figure identification. Additional sub-folders are provided to store forecasts, regressions and autocorrelations.  
+### 3.5 	`/Output`
+Folder and sub-folders are provided to store graphs and tables for forecasts, regressions, etc.  
 - **/.../garchForecasts/** stores all GARCH forecasts for each swap tenor against implied volatility levels, for each term
 - **/.../MacroRegressions/** stores .csv files for each swaption security VRP measures, regressed against economic annoucements (e.g. CPI) 
   - **/.../ivTermStruct/** stores term structures of implied volatility regression coefficients 
@@ -60,21 +60,20 @@ Graphs and tables reflected within the paper are labeled with their figure ident
 - **/.../Autocorrelations/** stores all autocorrelation figures associated with each swaption security's VRP measure
 
 ## 4	Running Code
-All of the code files are executed from the `main.m` file. The following steps below illustrate the neccesary data gathering steps, prior to execution.
+All of the code files are executed from the `main.m` file. The following steps are neccesary for gathering data, prior to execution.
 
 1.	Open Bloomberg Professional Service or Refinitiv Datastream, you will need to retrieve historical data and store them in the `/Input/` folder. All data ranges should coincide with one another, such that their time horizons match and are aranged in ascending order (from oldest to earliest date, e.g. 1996-2020). 
-    1. Download the US treasury Government 10 index (USGG10YR Index) and export to a `.csv` file name _**TreasuryRate.csv**_
-    2. Download US swap rate data for maturities 2y, 5y, 10y (e.g. USSW10 Curncy) and export to a `.csv` file named _**swapRates.csv**_   
-    3. Download US ATM swap implied volatility data for swap tenors 2y, 5y and 10y and expiry 3m, 6m, 12m and 24m 
-        1. Using a Black-Scholes model (e.g. USSV0110 Curncy) and exporting IV data to _**swapBlackIV.csv**_
-        2. Using a Normal distribution model (e.g. USSN0110 Curncy) and exporting IV data to _**swapNormalIV.csv**_
-    4. Download historical US VIX index data and export to a `.csv` file name _**VIX.csv**_
-    5. Download economic annoucement data (found on the **ECO** tab Bloomberg) and export to a `.csv` file name _**ECO_Release.csv**_
+    - Download the US treasury Government 10 index (**USGG10YR Index**) and export to a `.csv` file name _**TreasuryRate.csv**_
+    - Download US swap rate data for maturities 2y, 5y, 10y (**e.g. USSW10 Curncy**) and export to a `.csv` file named _**swapRates.csv**_   
+    - Download US ATM swap implied volatility data for swap tenors 2y, 5y and 10y and expiry 3m, 6m, 12m and 24m 
+        - Using a Black-Scholes model (**e.g. USSV0110 Curncy**) and exporting IV data to _**swapBlackIV.csv**_
+        - Using a Normal distribution model (**e.g. USSN0110 Curncy**) and exporting IV data to _**swapNormalIV.csv**_
+    - Download historical US VIX index data and export to a `.csv` file name _**VIX.csv**_
+    - Download economic annoucement data (found on the **ECO** tab Bloomberg) and export to a `.csv` file name _**ECO_Release.csv**_
 
 2.  Download the Effective Federal Funds Rate ([EFFR](https://fred.stlouisfed.org/series/EFFR)) from the FRED website over the identical range specified before. 
 
-3.	Run the `main.m` file in the RAN terminal, you may opt to run it in an interactive environment or in a batch terminal 
-
+3.	You may opt to run the `main.m` file in an interactive environment (IDE) or via terminal 
     ```
     % %    e.g. running code via batch on the FRBNY RAN HPC Cluster
     $ matlab20a-batch-withemail 10 main.m 
