@@ -27,7 +27,8 @@ The project code follows a linear order of execution, starting with the `main.m`
 ```
 
 ### 3.2 	`/Code`
-All project code is stored in the `/Code` folder and is responsible for generating figures, graphs and analysis on implied volatility.
+All project code is stored in the `/Code` folder for generating figures and performing analysis.
+- **/.../lib/** stores functions derived from academic papers to compute statistical tests
 
 ### 3.3 	`/Input`
 Folder for all unfiltered, raw input data for financial time series. 
@@ -60,7 +61,7 @@ Folder and sub-folders are provided to store graphs and tables for forecasts, re
 - **/.../Autocorrelations/** stores all autocorrelation figures associated with each swaption security's VRP measure
 
 ## 4	Running Code
-All of the code files are executed from the `main.m` file. The following steps are neccesary for gathering data, prior to execution.
+The following steps are neccesary for gathering data, prior to executing the `main.m` file.
 
 1.	Open Bloomberg Professional Service or Refinitiv Datastream, you will need to retrieve historical data and store them in the `/Input/` folder. All data ranges should coincide with one another, such that their time horizons match and are aranged in ascending order (from oldest to earliest date, e.g. 1996-2020). 
     - Download the US treasury Government 10 index (**USGG10YR Index**) and export to a `.csv` file name _**TreasuryRate.csv**_
