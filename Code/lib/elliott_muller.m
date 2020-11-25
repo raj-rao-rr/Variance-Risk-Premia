@@ -110,7 +110,7 @@ function QLL = elliott_muller(y, X, errorType)
     
     % compute a measures Ut, from step (3)
     uHat = (mpower(vX, -0.5) * xTranspose)' .* res1; 
-    disp(uHat)
+    
     % create new matrix/vector wHat, from step (4)
     wHat = zeros(T, k);                 % pre-allocating memory 
     wHat(1, :) = uHat(1, :);            % initialize first row of wHat

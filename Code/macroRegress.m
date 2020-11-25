@@ -40,6 +40,14 @@ if ~exist('Output/MacroRegressions/vrpInterestBuckets/', 'dir')
     mkdir Output/MacroRegressions/vrpInterestBuckets/                                         
 end
 
+if ~exist('Output/MacroRegressions/ivInterestBuckets/', 'dir')
+    mkdir Output/MacroRegressions/ivInterestBuckets/                                         
+end
+
+if ~exist('Output/MacroRegressions/rvInterestBuckets/', 'dir')
+    mkdir Output/MacroRegressions/rvInterestBuckets/                                         
+end
+
 addpath([root_dir filesep 'Output' filesep 'MacroRegressions'])             
 
 %% Regression on Macro surprises 
@@ -100,59 +108,50 @@ for i = 1:10
     
     % filter data by macro economic event
     filterData = ecoData(ismember(ecoData{:, 'Ticker'}, event), :);
-    
-    % compute the top quarter and bottom quarter forecast STD per event
+
+    % compute the top and bottom decile/quartiles forecast STD per event
+    bottom10 = quantile(filterData.StdDev, .10);
     bottom25 = quantile(filterData.StdDev, .25);
     top25 = quantile(filterData.StdDev, .75);
-    
+    top10 = quantile(filterData.StdDev, .90);
+
     % bucket out economic figures according to std value
-    lowECO = filterData((filterData.StdDev <= bottom25), :);
-    midECO = filterData((top25 > filterData.StdDev) & ...
-        (filterData.StdDev > bottom25), :);
-    highECO = filterData((filterData.StdDev >= top25), :);
-    
+    ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
+    ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
+    ecoBin3 = filterData((filterData.StdDev >= top25), :);
+    ecoBin4 = filterData((filterData.StdDev >= top10), :);
+
     % match target dates for each STD period 
-    lowDates = matchingError(lowECO, vrp);
-    midDates = matchingError(midECO, vrp);
-    highDates = matchingError(highECO, vrp);
-    
+    datesBin1 = matchingError(ecoBin1, vrp);
+    datesBin2 = matchingError(ecoBin2, vrp);
+    datesBin3 = matchingError(ecoBin3, vrp);
+    datesBin4 = matchingError(ecoBin4, vrp);
+
     % change in regressed values pre-post announcement 
-    [lowDiff, eco1] = volDiff(lowECO, vrp, lowDates);
-    [midDiff, eco2] = volDiff(midECO, vrp, midDates);
-    [highDiff, eco3] = volDiff(highECO, vrp, highDates);
-    
-    % split economic figures into positive and negative surprises
-    [lowPosECO, lowNegECO] = ecoSplits(eco1, 'Surprise');
-    [midPosECO, midNegECO] = ecoSplits(eco2, 'Surprise');
-    [highPosECO, highNegECO] = ecoSplits(eco3, 'Surprise');
-    
-    % split vrp figures according to positive and negative surprises 
-    [lowPosDiff, lowNegDiff] = volSplits(lowDiff, lowPosECO, ...
-        lowNegECO, lowDates);
-    [midPosDiff, midNegDiff] = volSplits(midDiff, midPosECO, ...
-        midNegECO, midDates);
-    [highPosDiff, highNegDiff] = volSplits(highDiff, highPosECO, ...
-        highNegECO, highDates);
-    
+    [diffBin1, ~] = differenceSplit(ecoBin1, vrp, datesBin1);
+    [diffBin2, ~] = differenceSplit(ecoBin2, vrp, datesBin2);
+    [diffBin3, ~] = differenceSplit(ecoBin3, vrp, datesBin3);
+    [diffBin4, ~] = differenceSplit(ecoBin4, vrp, datesBin4);
+
     % building out the average difference cell per STD period
     % function computes the mean, column wise (per each security) 
-    y = {mean(lowPosDiff(:, :)), mean(lowNegDiff(:, :)); ...
-        mean(midPosDiff(:, :)), mean(midNegDiff(:, :)); ...
-        mean(highPosDiff(:, :)), mean(highNegDiff(:, :))};
-    
+    y = {mean(diffBin1(:, :),'omitnan'), mean(diffBin2(:, :),'omitnan'), ...
+        mean(diffBin3(:, :),'omitnan'), mean(diffBin4(:, :),'omitnan')};
+
     % computes the simple average acroos row (per each date) - returns
     % scaler representing average VRP change across time and security
-    simpleAvg = [mean(y{1, 1}), mean(y{1, 2}); mean(y{2, 1}), ...
-        mean(y{2, 2}); mean(y{3, 1}), mean(y{3, 2})];
+    simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
    
     % plotting out the bucket changes by positive/negative leaning
     bar(simpleAvg); title(strcat(econVars(i), ' Forecast'));
-    xticks([1, 2, 3]); xticklabels({'Low Std', 'Mid Std', 'High Std'});
-    ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
+    xticks([1, 2, 3, 4]); 
+    xticklabels({'10th Decile', '4th Quartile', '1st Quartile', ...
+            '1st Decile'});
+    ylim([min(simpleAvg)-0.5, max(simpleAvg)+0.5])
     ylabel('Average VRP Change over Period', 'FontSize', 8);
-    xlabel('Forecast Standard Deviation', 'FontSize', 8);
-    lgd = legend({'Positive Surprise', 'Negative Surprise'}, ...
-        'Location', 'best'); 
+    xlabel('Forecast Standard Deviation Bucket', 'FontSize', 8);
+    title(strcat("VRP Responsiveness to ", econVars(i)))
+    lgd = legend({'VRP Change'}, 'Location', 'northeast'); 
     lgd.FontSize = 8;                                                       
     
     name = strcat("Output/MacroRegressions/vrpBuckets/", event, ".jpg");
@@ -164,7 +163,7 @@ fprintf('VRP bucket reponse graphs were created.\n');
 addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
     'vrpBuckets']) 
 
-%% Interest rate buckets, alongside economic forecast STD buckets
+%% Interest rate buckets, alongside economic forecast STD buckets (VRP)
 
 % interest rate regimes according to fed funds rate
 irEnv = {lowIR, highIR};
@@ -172,82 +171,72 @@ rateNames = {'Low Interest', 'High Interest'};
 
 for i = 1:10
     fig = figure('visible', 'off');                 
-    set(gcf, 'Position', [100, 100, 1100, 600]);   
+    set(gcf, 'Position', [100, 100, 1500, 600]);   
     
     for index = 1:2
         % selects the interest rate environment 
         df = irEnv{:, index};
         
-        % filter vrp according to interest rate regime 
-        filterVRP = vrp(ismember(vrp{:, 1}, df{:, 1}), :);
-       
+        % filter economic dates according to interest rate regime 
+        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
+            df{:, 'DateMod'}), :);
+        
         event = keys(i);    % economic event  
 
         % filter data by macro economic event
-        filterData = ecoData(ismember(ecoData{:, 'Ticker'}, event), :);
+        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
 
-        % compute the top quarter and bottom quarter forecast STD per event
+        % compute the top and bottom decile/quartiles forecast STD per event
+        bottom10 = quantile(filterData.StdDev, .10);
         bottom25 = quantile(filterData.StdDev, .25);
         top25 = quantile(filterData.StdDev, .75);
-
+        top10 = quantile(filterData.StdDev, .90);
+        
         % bucket out economic figures according to std value
-        lowECO = filterData((filterData.StdDev <= bottom25), :);
-        midECO = filterData((top25 > filterData.StdDev) & ...
-            (filterData.StdDev > bottom25), :);
-        highECO = filterData((filterData.StdDev >= top25), :);
+        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
+        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
+        ecoBin3 = filterData((filterData.StdDev >= top25), :);
+        ecoBin4 = filterData((filterData.StdDev >= top10), :);
 
         % match target dates for each STD period 
-        lowDates = matchingError(lowECO, filterVRP);
-        midDates = matchingError(midECO, filterVRP);
-        highDates = matchingError(highECO, filterVRP);
+        datesBin1 = matchingError(ecoBin1, vrp);
+        datesBin2 = matchingError(ecoBin2, vrp);
+        datesBin3 = matchingError(ecoBin3, vrp);
+        datesBin4 = matchingError(ecoBin4, vrp);
 
         % change in regressed values pre-post announcement 
-        [lowDiff, eco1] = volDiff(lowECO, filterVRP, lowDates);
-        [midDiff, eco2] = volDiff(midECO, filterVRP, midDates);
-        [highDiff, eco3] = volDiff(highECO, filterVRP, highDates);
-
-        % split economic figures into positive and negative surprises
-        [lowPosECO, lowNegECO] = ecoSplits(eco1, 'Surprise');
-        [midPosECO, midNegECO] = ecoSplits(eco2, 'Surprise');
-        [highPosECO, highNegECO] = ecoSplits(eco3, 'Surprise');
-
-        % split vrp figures according to positive and negative surprises 
-        [lowPosDiff, lowNegDiff] = volSplits(lowDiff, lowPosECO, ...
-            lowNegECO, lowDates);
-        [midPosDiff, midNegDiff] = volSplits(midDiff, midPosECO, ...
-            midNegECO, midDates);
-        [highPosDiff, highNegDiff] = volSplits(highDiff, highPosECO, ...
-            highNegECO, highDates);
+        [diffBin1, ~] = differenceSplit(ecoBin1, vrp, datesBin1);
+        [diffBin2, ~] = differenceSplit(ecoBin2, vrp, datesBin2);
+        [diffBin3, ~] = differenceSplit(ecoBin3, vrp, datesBin3);
+        [diffBin4, ~] = differenceSplit(ecoBin4, vrp, datesBin4);
 
         % building out the average difference cell per STD period
         % function computes the mean, column wise (per each security) 
-        y = {mean(lowPosDiff(:, :)), mean(lowNegDiff(:, :)); ...
-            mean(midPosDiff(:, :)), mean(midNegDiff(:, :)); ...
-            mean(highPosDiff(:, :)), mean(highNegDiff(:, :))};
+        y = {mean(diffBin1(:, :),'omitnan'), ...
+            mean(diffBin2(:, :),'omitnan'), ...
+            mean(diffBin3(:, :),'omitnan'), ...
+            mean(diffBin4(:, :),'omitnan')};
 
         % computes the simple average acroos row (per each date) - returns
         % scaler representing average VRP change across time and security
-        simpleAvg = [mean(y{1, 1}), mean(y{1, 2}); mean(y{2, 1}), ...
-            mean(y{2, 2}); mean(y{3, 1}), mean(y{3, 2})];
-
+        simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
+        
         % plotting out the bucket changes by positive/negative leaning
-        if ~isnan(simpleAvg)
-            subplot(1, 2, index);
-            bar(simpleAvg); title(strcat(rateNames(index), ...
-                ' Rate Environment'));
-            xticks([1, 2, 3]); xticklabels({'Low Std', 'Mid Std', ...
-                'High Std'});
-            ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
-            xlabel('Forecast Standard Deviation', 'FontSize', 8);
-            lgd = legend({'Positive Surprise', 'Negative Surprise'}, ...
-                'Location', 'best'); 
-            lgd.FontSize = 8;                                                       
-        end
+        subplot(1, 2, index);
+        bar(simpleAvg); title(strcat(rateNames(index), ...
+            ' Rate Environment'));
+        xticks([1, 2, 3, 4]); 
+        xticklabels({'10th Decile', '4th Quartile', '1st Quartile', ...
+            '1st Decile'});
+        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
+        xlabel('Forecast Standard Deviation Bucket', 'FontSize', 8);
+        lgd = legend({'VRP Change'}, 'Location', 'best'); 
+        lgd.FontSize = 8;                                                       
+    
     end
     
     subplot(1, 2, 1);
-    ylabel(strcat("Average VRP Change over ", econVars(i), " surprises"), ...
-        'FontSize', 8);
+    ylabel(strcat("Average VRP Change for ", econVars(i)), 'FontSize', 8);
     
     % export the image to Interest Bucket for VRP measures
     name = strcat("Output/MacroRegressions/vrpInterestBuckets/", ...
@@ -261,57 +250,273 @@ fprintf('VRP reponse graphs were created for interest rate regimes.\n');
 addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
     'vrpInterestBuckets']) 
 
-%% Timeseries of VRP changes by STD buckets 
+%% Interest rate buckets, alongside economic forecast STD buckets (IV)
+
+% interest rate regimes according to fed funds rate
+irEnv = {lowIR, highIR};
+rateNames = {'Low Interest', 'High Interest'};
 
 for i = 1:10
+    fig = figure('visible', 'on');                 
+    set(gcf, 'Position', [100, 100, 1500, 600]);   
     
-    fig = figure('visible', 'off');                 
-    set(gcf, 'Position', [100, 100, 800, 600]);   
+    for index = 1:2
+        % selects the interest rate environment 
+        df = irEnv{:, index};
+        
+        % filter economic dates according to interest rate regime 
+        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
+            df{:, 'DateMod'}), :);
+        
+        event = keys(i);    % economic event  
 
-    event = keys(i);
+        % filter data by macro economic event
+        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
+
+        % compute the top and bottom decile/quartiles forecast STD per event
+        bottom10 = quantile(filterData.StdDev, .10);
+        bottom25 = quantile(filterData.StdDev, .25);
+        top25 = quantile(filterData.StdDev, .75);
+        top10 = quantile(filterData.StdDev, .90);
+        
+        % bucket out economic figures according to std value
+        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
+        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
+        ecoBin3 = filterData((filterData.StdDev >= top25), :);
+        ecoBin4 = filterData((filterData.StdDev >= top10), :);
+
+        % match target dates for each STD period 
+        datesBin1 = matchingError(ecoBin1, blackVol);
+        datesBin2 = matchingError(ecoBin2, blackVol);
+        datesBin3 = matchingError(ecoBin3, blackVol);
+        datesBin4 = matchingError(ecoBin4, blackVol);
+
+        % change in regressed values pre-post announcement 
+        [diffBin1, ~] = differenceSplit(ecoBin1, blackVol, datesBin1);
+        [diffBin2, ~] = differenceSplit(ecoBin2, blackVol, datesBin2);
+        [diffBin3, ~] = differenceSplit(ecoBin3, blackVol, datesBin3);
+        [diffBin4, ~] = differenceSplit(ecoBin4, blackVol, datesBin4);
+
+        % building out the average difference cell per STD period
+        % function computes the mean, column wise (per each security) 
+        y = {mean(diffBin1(:, :),'omitnan'), ...
+            mean(diffBin2(:, :),'omitnan'), ...
+            mean(diffBin3(:, :),'omitnan'), ...
+            mean(diffBin4(:, :),'omitnan')};
+
+        % computes the simple average acroos row (per each date) - returns
+        % scaler representing average VRP change across time and security
+        simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
+        
+        % plotting out the bucket changes by positive/negative leaning
+        subplot(1, 2, index);
+        bar(simpleAvg); title(strcat(rateNames(index), ...
+            ' Rate Environment'));
+        xticks([1, 2, 3, 4]); 
+        xticklabels({'10th Decile', '4th Quartile', '1st Quartile', ...
+            '1st Decile'});
+        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
+        xlabel('Forecast Standard Deviation Bucket', 'FontSize', 8);
+        lgd = legend({'VRP Change'}, 'Location', 'best'); 
+        lgd.FontSize = 8;                                                       
     
-    % filter data by macro economic event
-    filterData = ecoData(ismember(ecoData{:, 'Ticker'}, event), :);
+    end
     
-    % compute the top quarter and bottom quarter forecast STD per event
-    bottom25 = quantile(filterData.StdDev, .25);
-    top25 = quantile(filterData.StdDev, .75);
-    
-    % bucket out economic figures according to std value
-    lowECO = filterData((filterData.StdDev <= bottom25), :);
-    midECO = filterData((top25 > filterData.StdDev) & ...
-        (filterData.StdDev > bottom25), :);
-    highECO = filterData((filterData.StdDev >= top25), :);
-    
-    % match target dates for each STD period 
-    lowDates = matchingError(lowECO, vrp);
-    midDates = matchingError(midECO, vrp);
-    highDates = matchingError(highECO, vrp);
-    
-    % change in regressed values pre-post announcement 
-    [lowDiff, eco1] = volDiff(lowECO, vrp, lowDates);
-    [midDiff, eco2] = volDiff(midECO, vrp, midDates);
-    [highDiff, eco3] = volDiff(highECO, vrp, highDates);
-    
-    % building out the average difference cell per STD period
-    % function computes the mean, column wise (per each security) 
-    y = {mean(lowDiff(:, :), 2), mean(midDiff(:, :), 2), ...
-        mean(highDiff(:, :), 2)};
-    
-    % plotting out the bucket changes by positive/negative leaning
-    hold on; 
-    plot(eco1{:, 1}, y{1}, 'DisplayName', 'Low Std', 'Marker', 'o'); 
-    plot(eco2{:, 1}, y{2}, 'DisplayName', 'Mid Std', 'Marker', 'd'); 
-    plot(eco3{:, 1}, y{3}, 'DisplayName', 'High Std', 'Marker', 's'); 
-    hold off; title(strcat(econVars(i), ' Forecast Impact'));
-    ylabel('Average VRP Change over Period', 'FontSize', 8);
-    legend('Location', 'best', 'FontSize', 8);                                                     
+    subplot(1, 2, 1);
+    ylabel(strcat("Average Implied Volatility Change for ", ...
+        econVars(i)), 'FontSize', 8);
     
     % export the image to Interest Bucket for VRP measures
-    name = strcat("Output/MacroRegressions/vrpBuckets/", ...
-        event, " TS.jpg");
+    name = strcat("Output/MacroRegressions/ivInterestBuckets/", ...
+        event, ".jpg");
     exportgraphics(fig, name);
+    
 end
+
+fprintf('IV reponse graphs were created for interest rate regimes.\n');
+
+addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
+    'ivInterestBuckets']) 
+
+%% Interest rate buckets, alongside economic forecast STD buckets (IV)
+
+% interest rate regimes according to fed funds rate
+irEnv = {lowIR, highIR};
+rateNames = {'Low Interest', 'High Interest'};
+
+for i = 1:10
+    fig = figure('visible', 'off');                 
+    set(gcf, 'Position', [100, 100, 1500, 600]);   
+    
+    for index = 1:2
+        % selects the interest rate environment 
+        df = irEnv{:, index};
+        
+        % filter economic dates according to interest rate regime 
+        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
+            df{:, 'DateMod'}), :);
+        
+        event = keys(i);    % economic event  
+
+        % filter data by macro economic event
+        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
+
+        % compute the top and bottom decile/quartiles forecast STD per event
+        bottom10 = quantile(filterData.StdDev, .10);
+        bottom25 = quantile(filterData.StdDev, .25);
+        top25 = quantile(filterData.StdDev, .75);
+        top10 = quantile(filterData.StdDev, .90);
+        
+        % bucket out economic figures according to std value
+        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
+        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
+        ecoBin3 = filterData((filterData.StdDev >= top25), :);
+        ecoBin4 = filterData((filterData.StdDev >= top10), :);
+
+        % match target dates for each STD period 
+        datesBin1 = matchingError(ecoBin1, SigA);
+        datesBin2 = matchingError(ecoBin2, SigA);
+        datesBin3 = matchingError(ecoBin3, SigA);
+        datesBin4 = matchingError(ecoBin4, SigA);
+
+        % change in regressed values pre-post announcement 
+        [diffBin1, ~] = differenceSplit(ecoBin1, SigA, datesBin1);
+        [diffBin2, ~] = differenceSplit(ecoBin2, SigA, datesBin2);
+        [diffBin3, ~] = differenceSplit(ecoBin3, SigA, datesBin3);
+        [diffBin4, ~] = differenceSplit(ecoBin4, SigA, datesBin4);
+
+        % building out the average difference cell per STD period
+        % function computes the mean, column wise (per each security) 
+        y = {mean(diffBin1(:, :),'omitnan'), ...
+            mean(diffBin2(:, :),'omitnan'), ...
+            mean(diffBin3(:, :),'omitnan'), ...
+            mean(diffBin4(:, :),'omitnan')};
+
+        % computes the simple average acroos row (per each date) - returns
+        % scaler representing average VRP change across time and security
+        simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
+        
+        % plotting out the bucket changes by positive/negative leaning
+        subplot(1, 2, index);
+        bar(simpleAvg); title(strcat(rateNames(index), ...
+            ' Rate Environment'));
+        xticks([1, 2, 3, 4]); 
+        xticklabels({'10th Decile', '4th Quartile', '1st Quartile', ...
+            '1st Decile'});
+        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
+        xlabel('Forecast Standard Deviation Bucket', 'FontSize', 8);
+        lgd = legend({'VRP Change'}, 'Location', 'best'); 
+        lgd.FontSize = 8;                                                       
+    
+    end
+    
+    subplot(1, 2, 1);
+    ylabel(strcat("Average Implied Volatility Change for ", ...
+        econVars(i)), 'FontSize', 8);
+    
+    % export the image to Interest Bucket for VRP measures
+    name = strcat("Output/MacroRegressions/rvInterestBuckets/", ...
+        event, ".jpg");
+    exportgraphics(fig, name);
+    
+end
+
+fprintf('RV reponse graphs were created for interest rate regimes.\n');
+
+addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
+    'rvInterestBuckets']) 
+
+%% Timeseries of VRP changes by STD buckets 
+
+% interest rate regimes according to fed funds rate
+irEnv = {lowIR, highIR};
+rateNames = {'Low Interest', 'High Interest', 'fontsize',8};
+
+fig = figure('visible', 'off');                 
+set(gcf, 'Position', [100, 100, 1100, 600]);   
+
+a = get(gca,'XTickLabel');
+set(gca,'XTickLabel',a,'FontName','Times','fontsize',8)
+
+% allocate memory for low and high interest rate regime 
+vrpIR = zeros(10, 2);
+
+% iterate through economic variables
+for i = 1:10
+    % iterate through interest rate regime
+    for index = 1:2
+        % selects the interest rate environment 
+        df = irEnv{:, index};
+        
+        % filter economic dates according to interest rate regime 
+        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
+            df{:, 'DateMod'}), :);
+        
+        event = keys(i);    % economic event  
+
+        % filter data by macro economic event
+        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
+
+        % compute the top and bottom decile/quartiles forecast STD per event
+        bottom10 = quantile(filterData.StdDev, .10);
+        bottom25 = quantile(filterData.StdDev, .25);
+        top25 = quantile(filterData.StdDev, .75);
+        top10 = quantile(filterData.StdDev, .90);
+        
+        % bucket out economic figures according to std value
+        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
+        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
+        ecoBin3 = filterData((filterData.StdDev >= top25), :);
+        ecoBin4 = filterData((filterData.StdDev >= top10), :);
+
+        % match target dates for each STD period 
+        datesBin1 = matchingError(ecoBin1, vrp);
+        datesBin2 = matchingError(ecoBin2, vrp);
+        datesBin3 = matchingError(ecoBin3, vrp);
+        datesBin4 = matchingError(ecoBin4, vrp);
+
+        % change in regressed values pre-post announcement 
+        [diffBin1, ~] = differenceSplit(ecoBin1, vrp, datesBin1);
+        [diffBin2, ~] = differenceSplit(ecoBin2, vrp, datesBin2);
+        [diffBin3, ~] = differenceSplit(ecoBin3, vrp, datesBin3);
+        [diffBin4, ~] = differenceSplit(ecoBin4, vrp, datesBin4);
+
+        % building out the average difference cell per STD period
+        % function computes the mean, column wise (per each security) 
+        y = [mean(mean(diffBin1(:, :), 'omitnan')), ...
+            mean(mean(diffBin2(:, :), 'omitnan')), ...
+            mean(mean(diffBin3(:, :), 'omitnan')), ...
+            mean(mean(diffBin4(:, :), 'omitnan'))];
+
+        % scaler representing average VRP change across time and bucket
+        simpleAvg = mean(y, 'omitnan'); 
+                                                             
+        vrpIR(i, index) = simpleAvg;
+        
+    end
+    
+end
+
+hold on; 
+% plottin the long run average and time series of VRP per rate regime 
+plot(vrpIR(:, 1), 'DisplayName', 'Low Rate Regime', 'LineWidth', 2, ...
+    'color', 'red')
+plot(zeros(10, 1)+mean(vrpIR(:, 1)), 'DisplayName', 'Low Rate Avg.', ...
+    'LineStyle', '--', 'color', 'red')
+
+plot(vrpIR(:, 2), 'DisplayName', 'High Rate Regime', 'LineWidth', 2, ...
+    'color', 'blue')
+plot(zeros(10, 1)+mean(vrpIR(:, 2)), 'DisplayName', 'High Rate Avg.', ...
+    'LineStyle', '--', 'color', 'blue')
+
+xticks(1:10); xticklabels(econVars); xtickangle(30);
+ylabel(strcat("Average VRP Change over STD Buckets", ...
+    " [Percentiles 0.10, 0.25, 0.75, 0.90]"), 'FontSize', 8);
+legend()
+
+% export the image to Interest Bucket for VRP measures
+name = strcat("Output/MacroRegressions/avgVRP.jpg");
+exportgraphics(fig, name);
 
 fprintf('VRP time series graphs were created.\n');
 
@@ -339,7 +544,7 @@ function targetDates = matchingError(base, target)
 end
 
 
-function [diff, eco] = volDiff(base, target, targetDate)
+function [diff, eco] = differenceSplit(base, target, targetDate)
 %   Computing the volatility difference between pre/post annoucements
 %   as well as the filtered economic data 
 %   -------
@@ -424,7 +629,7 @@ function concatTB = regression(X, y, col)
            try
                % filter out for particular economic data
                filterData = X(ismember(X{:, 'Ticker'}, i), :);
-
+               
                % checking runtime of regressed values
                event = filterData{1, 'Event'}; 
                fprintf('\tRegressing on %s\n', event{:});
@@ -433,17 +638,17 @@ function concatTB = regression(X, y, col)
                targetDates = matchingError(filterData, y);
                 
                % computes difference and economic surprise
-               [diff, eco] = volDiff(filterData, y, targetDates);
-
+               [diff, eco] = differenceSplit(filterData, y, targetDates);
+      
                % perform linear regression with significance
                mdl = fitlm(eco{:, col}, diff(:, index));
-
+       
                % select model specifications for each regression 
                baseTB(rows, :) = mdl.Coefficients{2,:}; 
                rows = rows + 1;
 
            catch
-               fprintf('\nError looking to split %s\n', i{:});
+               fprintf('\t\tError looking to split %s\n', i{:});
                
            end
            

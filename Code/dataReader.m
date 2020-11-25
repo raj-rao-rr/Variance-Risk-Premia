@@ -7,9 +7,14 @@ load INIT root_dir
 
 %% FRED Data set pulls for Fed Funds Rates
 
-fedfunds = readtable('EFFR.csv', 'PreserveVariableNames', true);            % N by 1 vector
+fedfunds = readtable('FEDFUNDS.csv', 'PreserveVariableNames', true);            % N by 1 vector
 fedfunds{:, 1} = datetime(fedfunds{:, 1},'InputFormat','yyyy-MMM-dd');
 fedfunds = rmmissing(fedfunds);  
+
+% create a date modification for month,year identifier
+dateMod = string(month(fedfunds{:, 1})) + string(year(fedfunds{:, 1}));
+
+fedfunds.DateMod = dateMod; 
 
 %% Swap and Implied Volatility Data
 
@@ -22,10 +27,10 @@ swapData = readtable('swapRates.csv', 'PreserveVariableNames', true);       % N 
 vixData = readtable('VIX.csv', 'PreserveVariableNames', true);              % N by 2 matrix
 
 % remove all NaN rows from the tables
-blackVol = rmmissing(blackVol);        
-normalVol = rmmissing(normalVol);        
-treasuryData = rmmissing(treasuryData); 
-swapData = rmmissing(swapData);  
+blackVol        = rmmissing(blackVol);        
+normalVol       = rmmissing(normalVol);        
+treasuryData    = rmmissing(treasuryData); 
+swapData        = rmmissing(swapData);  
 
 % swap maturities: 1y; 2y; 3y; 5y; 7y; 10y;
 swapRates = swapData(:,2:end).Properties.VariableDescriptions;   
@@ -53,18 +58,34 @@ ecoData.SurpriseZscore = (ecoData{:, 'Actual'} - ecoData{:, 'SurvM'}) ./ ...
     ecoData{:, 'StdDev'}; 
 
 % Key economic figures to extract
-econVars = {'CPI ex. Food & Enrgy MoM', 'Unemployment Rate', ...
-    'PPI Ex Food and Enrgy MoM', 'PCE Core Deflator MoM', ...
-    'GDP Annualized QoQ', 'Retail Sales ex. Auto', ...
-    'Change in Non-farm payrolls', 'Empire Manufacturing Survey', ...
-    'Trade Balance', 'FOMC Rate Decison'}; 
+% econVars = {'CPI ex. Food & Enrgy MoM', 'Unemployment Rate', ...
+%     'PPI Ex Food and Enrgy MoM', 'PCE Core Deflator MoM', ...
+%     'GDP Annualized QoQ', 'Retail Sales ex. Auto', ...
+%     'Change in Non-farm payrolls', 'Empire Manufacturing Survey', ...
+%     'Trade Balance', 'FOMC Rate Decison'}; 
+% 
+% keys = [{'CPUPXCHG Index'}, {'USURTOT Index'}, {'FDIDSGMO Index'}, ...
+%     {'PCE CMOM Index'}, {'GDP CQOQ Index'}, {'RSTAXAG% Index'}, ... 
+%     {'NFP TCH Index'}, {'EMPRGBCI Index'}, {'USTBTOT Index'}, ...
+%     {'FDTR Index'}];
 
-keys = [{'CPUPXCHG Index'}, {'USURTOT Index'}, {'FDIDSGMO Index'}, ...
-    {'PCE CMOM Index'}, {'GDP CQOQ Index'}, {'RSTAXAG% Index'}, ... 
-    {'NFP TCH Index'}, {'EMPRGBCI Index'}, {'USTBTOT Index'}, ...
-    {'FDTR Index'}];
+keys = [{'NFP TCH Index'}, {'INJCJC Index'}, {'FDTR Index'}, ...
+    {'GDP CQOQ Index'}, {'CPI CHNG Index'}, {'NAPMPMI Index'}, ...
+    {'CONSSENT Index'}, {'DGNOCHNG Index'}, {'RSTAMOM Index'}, ...
+    {'PCE CMOM Index'}];
+
+econVars = {'Change in Non-farm payrolls', 'Initial Jobless Claims', ...
+    'FOMC Rate Decison', 'GDP Annualized QoQ', 'CPI MoM', ...
+    'ISM Manufacturing', 'U. of Mich. Sentiment', ...
+    'Durable Goods Orders', 'Retail Sales Advance MoM', ...
+    'PCE Core Deflator MoM'};
 
 ecoData = ecoData(ismember(ecoData{:, 'Ticker'}, keys), :);
+
+% create a date modification for month,year identifier
+dateMod = string(month(ecoData{:, 1})) + string(year(ecoData{:, 1}));
+
+ecoData.DateMod = dateMod; 
 
 %% Determing Interest Rate Regimes
 
@@ -75,12 +96,12 @@ highIR = fedfunds(fedfunds{:, 2} >= 2,:);    % fed funds rate >= 2%
 
 dateStop = '3/1/2020';
 
-swapData = swapData(swapData{:,1} < dateStop, :);
-treasuryData = treasuryData(treasuryData{:,1} < dateStop, :);
-normalVol = normalVol(normalVol{:,1} < dateStop, :);
-blackVol = blackVol(blackVol{:,1} < dateStop, :);
-ecoData = ecoData(ecoData{:,1} < dateStop, :);
-fedfunds = fedfunds(fedfunds{:,1} < dateStop, :);
+swapData        = swapData(swapData{:,1} < dateStop, :);
+treasuryData    = treasuryData(treasuryData{:,1} < dateStop, :);
+normalVol       = normalVol(normalVol{:,1} < dateStop, :);
+blackVol        = blackVol(blackVol{:,1} < dateStop, :);
+ecoData         = ecoData(ecoData{:,1} < dateStop, :);
+fedfunds        = fedfunds(fedfunds{:,1} < dateStop, :);
 
 %% Save all variables in *.mat file to be referenced
 
