@@ -138,6 +138,10 @@ fprintf('Daily vol file has been created.\n');
 save('Temp/SigA.mat','SigA','LB','UB');
 fprintf('Annualized vol file has been created.\n');
 
+writetable(LB, 'Temp/pythonTemps/volEstimates/LB.csv')
+writetable(UB, 'Temp/pythonTemps/volEstimates/UB.csv')
+writetable(SigA, 'Temp/pythonTemps/volEstimates/SigA.csv')
+
 %%
 
 function array = tableNames()

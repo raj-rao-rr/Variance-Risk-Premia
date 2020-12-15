@@ -6,8 +6,7 @@ clear;
 load DATA blackVol normalVol
 
 % loading in temp file for GARCh forecasts
-load SigA SigA 
-
+load SigA SigA LB UB
 
 %% Common global variables
 
@@ -40,10 +39,12 @@ vrp = array2table(vrp);     % convert matrix to table
 %% Exporting VRP table 
 
 vrp.Properties.VariableNames = SigA.Properties.VariableNames(2:end);
-vrp.date = impVol{:, 1};
+vrp.date = impVol{:, 1}; 
 
 % move the orientation of the date column to first column position
 vrp = movevars(vrp, 'date' ,'Before', vrp.Properties.VariableNames{1});
 
 save Temp/VRP.mat vrp
+writetable(vrp, 'Temp/pythonTemps/varRiskPremium/vrp.csv')
+
 fprintf('Variance Risk Premium measures have been calculated.\n');
