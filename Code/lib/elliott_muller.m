@@ -1,13 +1,13 @@
 % 
 % Author, Rajesh Rao
 % 
-% Tests for instability or breaks in coefficients in regression models 
-% detailed in the Elliott and Muller (2006) paper
-% ------------------------------------------------------------------------
 % We consider tests of the null hypothesis of a stable linear model
 % yt = Xt'β + εt against the alternative of a partially unstable 
-% model yt = Xt'βt + εt, where variation in βt is of the strong form
+% model yt = Xt'βt + εt, where variation in βt is of the strong form. 
+% Further details refer to the Elliott and Muller (2006) paper
+% ------------------------------------------------------------------------
 %
+% Input:
 %   :param: y (type array) - vector
 %       The output vector, dependent variable
 %   :param: X (type array) - matrix/vector  
@@ -15,6 +15,10 @@
 %   :param: errorType (type char) - text word
 %       A string identifier for the epsilon being correlated or 
 %       uncorrelated to the independent variable 
+% 
+% Output:
+%   :param: QLL (type double) - floating point number
+%       The test statistic 
 % 
 % Syntax:
 %   QLL = elliott_muller(y, X, errorType)
@@ -61,7 +65,6 @@
 %       -0.00
 % 
 %   
-% 
 
 function QLL = elliott_muller(y, X, errorType)
     
@@ -80,7 +83,6 @@ function QLL = elliott_muller(y, X, errorType)
            strcmp(errorType, 'uncorrelated'), ...
         'error type included, correlated and uncorrelated'); 
     
-    % ====================================================================
     
     % compute the OLS residuals from regression, from step (1)
     [~,~,res1] = regress(y, X);
