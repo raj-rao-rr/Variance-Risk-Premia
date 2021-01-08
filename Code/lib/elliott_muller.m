@@ -138,4 +138,5 @@ function QLL = elliott_muller(y, X, errorType)
     
     % computes the “quasi local level" test statistic, from step (6)
     QLL = sumResiduals * rBar - reducedFactor;
+    
 end
