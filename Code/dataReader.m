@@ -1,22 +1,43 @@
-% Reads in the provided data files from Input and stores these variables to a .mat file
+% Reads in data files and stores these variables to a .mat file
 
 clear;
 
 load INIT root_dir
 
+% creating certificate for web access 
+o = weboptions('CertificateFilename',"");
 
-%% FRED Data set pulls for Fed Funds Rates
+%% Effective Federal Funds Rate, taken from FRED website
 
-fedfunds = readtable('FEDFUNDS.csv', 'PreserveVariableNames', true);            % N by 1 vector
-fedfunds{:, 1} = datetime(fedfunds{:, 1},'InputFormat','yyyy-MMM-dd');
-fedfunds = rmmissing(fedfunds);  
+% sets current date time to retrieve current information
+currentDate = string(datetime('today', 'Format','yyyy-MM-dd'));
 
-% create a date modification for month,year identifier
-dateMod = string(month(fedfunds{:, 1})) + string(year(fedfunds{:, 1}));
+url = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1168&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=DFF&scale=left&cosd=1954-07-01&coed=2020-12-22&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily%2C%207-Day&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=" + currentDate +  "&revision_date=" + currentDate + "&nd=1954-07-01";
 
-fedfunds.DateMod = dateMod; 
+% read web data from FRED and stores it in appropriate file 
+fedfunds = webread(url, o);
+fedfunds = rmmissing(fedfunds);
 
-%% Swap and Implied Volatility Data
+%% The U.S. Treasury Yield Curve: 1961 to the Present
+
+url = 'https://www.federalreserve.gov/data/yield-curve-tables/feds200628.csv';
+
+% read web data from Federal Reserve and stores it in appropriate file 
+websave(strcat(root_dir, '/Input/yeildCurve.csv'), url, o);
+yeildCurve = readtable('yeildCurve.csv');
+
+% select only the 1y, 5y, 10y zero-coupon yeilds
+yeildCurve = yeildCurve(:, ismember(yeildCurve.Properties.VariableNames, ...
+    {'Date', 'SVENY01', 'SVENY05', 'SVENY10'}));
+
+% remove NaNs and missing rows from the dataset
+yeildCurve = rmmissing(yeildCurve);
+yeildCurve = yeildCurve(~ismember(yeildCurve.SVENY10, 'NA'), :);
+
+% convert 10y zero-coupon yeild from string to double precsion num
+yeildCurve.SVENY10 = str2double(yeildCurve.SVENY10);
+
+%% Swap and Implied Volatility Data, taken from Bloomberg
 
 % read in data from .csv file as a table   
 blackVol = readtable('swapBlackIV.csv', 'PreserveVariableNames', true);     % N by 13 matrix
@@ -33,9 +54,9 @@ treasuryData    = rmmissing(treasuryData);
 swapData        = rmmissing(swapData);  
 
 % swap maturities: 1y; 2y; 3y; 5y; 7y; 10y;
-swapRates = swapData(:,2:end).Properties.VariableNames;   
+swapNames = swapData(:, 2:end).Properties.VariableNames;   
 
-%% Economic Annoucements
+%% Economic Annoucements, tkaen from Bloomberg
 
 % run python script to clean economic variables with weird formats
 % e.g. Non-farm payrolls 735k -> Non-farm payrools 735
@@ -57,14 +78,19 @@ ecoData.Surprise = ecoData{:, 'Actual'} - ecoData{:, 'SurvM'};
 ecoData.SurpriseZscore = (ecoData{:, 'Actual'} - ecoData{:, 'SurvM'}) ./ ...
     ecoData{:, 'StdDev'}; 
 
+% re-map all values of NaN or inf, as a result of ZeroDivsionError
+rm = ecoData(isinf(ecoData.SurpriseZscore)| isnan(ecoData.SurpriseZscore), :);
+ecoData(isinf(ecoData.SurpriseZscore) | isnan(ecoData.SurpriseZscore), ...
+    'SurpriseZscore') = array2table(zeros(size(rm, 1), 1)); 
+
 keys = [{'NFP TCH Index'}, {'INJCJC Index'}, {'FDTR Index'}, ...
     {'GDP CQOQ Index'}, {'CPI CHNG Index'}, {'NAPMPMI Index'}, ...
     {'CONSSENT Index'}, {'USURTOT Index'}, {'RSTAMOM Index'}, ...
     {'PCE CMOM Index'}];
 
-econVars = {'Change in Non-farm payrolls', 'Initial Jobless Claims', ...
-    'FOMC Rate Decison', 'GDP Annualized QoQ', 'CPI MoM', ...
-    'ISM Manufacturing', 'U. of Mich. Sentiment', ...
+econVars = {'Change in Non-farm Payrolls', 'Initial Jobless Claims', ...
+    'FOMC Rate Decision', 'GDP Annualized QoQ', 'CPI MoM', ...
+    'ISM Manufacturing', 'University of Michigan Sentiment', ...
     'Unemployment Rate', 'Retail Sales Advance MoM', ...
     'PCE Core Deflator MoM'};
 
@@ -73,11 +99,6 @@ ecoMap = containers.Map(keys,econVars);
 
 ecoData = ecoData(ismember(ecoData{:, 'Ticker'}, keys), :);
 
-% create a date modification for month,year identifier
-dateMod = string(month(ecoData{:, 1})) + string(year(ecoData{:, 1}));
-
-ecoData.DateMod = dateMod; 
-
 %% Determing Interest Rate Regimes
 
 lowIR = fedfunds(fedfunds{:, 2} < 2,:);      % fed funds rate < 2%
@@ -85,7 +106,7 @@ highIR = fedfunds(fedfunds{:, 2} >= 2,:);    % fed funds rate >= 2%
 
 %% Constricting the time horizon (comment out if ununsed)
 
-dateStop = '3/1/2020';
+dateStop = datetime('2020-03-01', 'InputFormat', 'yyyy-MM-dd');
 
 swapData        = swapData(swapData{:,1} < dateStop, :);
 treasuryData    = treasuryData(treasuryData{:,1} < dateStop, :);
@@ -93,23 +114,12 @@ normalVol       = normalVol(normalVol{:,1} < dateStop, :);
 blackVol        = blackVol(blackVol{:,1} < dateStop, :);
 ecoData         = ecoData(ecoData{:,1} < dateStop, :);
 fedfunds        = fedfunds(fedfunds{:,1} < dateStop, :);
+yeildCurve      = yeildCurve(yeildCurve{:,1} < dateStop, :);
 
 %% Save all variables in *.mat file to be referenced
 
-save('Temp/DATA', 'blackVol',  'normalVol' , 'treasuryData', ...
-    'swapData', 'vixData', 'swapRates', 'ecoMap', 'ecoData', 'keys', ...
+save('Temp/DATA', 'blackVol',  'normalVol' , 'treasuryData', 'yeildCurve', ...
+    'swapData', 'vixData', 'swapNames', 'ecoMap', 'ecoData', 'keys', ...
     'econVars', 'fedfunds', 'lowIR', 'highIR')
-
-%% Save data files to sub-temp folder for use in python visualization 
-
-writetable(blackVol, 'Temp/pythonTemps/structData/blackVol.csv');
-writetable(normalVol, 'Temp/pythonTemps/structData/normalVol.csv');
-writetable(treasuryData, 'Temp/pythonTemps/structData/treasuryData.csv');
-writetable(swapData, 'Temp/pythonTemps/structData/swapData.csv');
-writetable(vixData, 'Temp/pythonTemps/structData/vixData.csv');
-writetable(ecoData, 'Temp/pythonTemps/structData/ecoData.csv');
-writetable(fedfunds, 'Temp/pythonTemps/structData/fedfunds.csv');
-writetable(lowIR, 'Temp/pythonTemps/structData/lowIR.csv');
-writetable(highIR, 'Temp/pythonTemps/structData/highIR.csv')
 
 fprintf('Data has been downloaded.\n'); 

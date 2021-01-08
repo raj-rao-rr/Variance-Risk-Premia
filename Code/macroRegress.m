@@ -4,9 +4,10 @@ clear;
 
 load INIT root_dir
 
-% loading in economic and implied volatility data
-load DATA ecoMap ecoData keys blackVol econVars lowIR highIR
-
+% loading in economic and volatility data
+load DATA yeildCurve ecoMap ecoData keys blackVol econVars lowIR highIR
+load FILTER ecoSTD10 ecoSTD25 ecoSTD75 ecoSTD90 impvolTermReduced ...
+    impvolTenorReduced
 load SigA SigA 
 
 % loading in VRP measures
@@ -20,30 +21,30 @@ if ~exist('Output/MacroRegressions/', 'dir')
     mkdir Output/MacroRegressions/                                         
 end
 
-if ~exist('Output/MacroRegressions/RegressTermStructure/', 'dir')
-    mkdir Output/MacroRegressions/RegressTermStructure/  
+if ~exist('Output/MacroRegressions/Regressions/', 'dir')
+    mkdir Output/MacroRegressions/Regressions/  
     
     % create directory for term structure graphs for full series
-    mkdir Output/MacroRegressions/RegressTermStructure/full/
+    mkdir Output/MacroRegressions/Regressions/full/
     
-    mkdir Output/MacroRegressions/RegressTermStructure/full/vrp/ 
-    mkdir Output/MacroRegressions/RegressTermStructure/full/iv/
-    mkdir Output/MacroRegressions/RegressTermStructure/full/rv/
+    mkdir Output/MacroRegressions/Regressions/full/vrp/ 
+    mkdir Output/MacroRegressions/Regressions/full/iv/
+    mkdir Output/MacroRegressions/Regressions/full/rv/
     
     % create directory for term structure graphs for partial series
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/
+    mkdir Output/MacroRegressions/Regressions/partial/
     
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/vrp/ 
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/vrp/high/
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/vrp/low/
+    mkdir Output/MacroRegressions/Regressions/partial/vrp/ 
+    mkdir Output/MacroRegressions/Regressions/partial/vrp/high/
+    mkdir Output/MacroRegressions/Regressions/partial/vrp/low/
     
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/iv/
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/iv/high/
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/iv/low/
+    mkdir Output/MacroRegressions/Regressions/partial/iv/
+    mkdir Output/MacroRegressions/Regressions/partial/iv/high/
+    mkdir Output/MacroRegressions/Regressions/partial/iv/low/
     
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/rv/
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/rv/high/
-    mkdir Output/MacroRegressions/RegressTermStructure/partial/rv/low/
+    mkdir Output/MacroRegressions/Regressions/partial/rv/
+    mkdir Output/MacroRegressions/Regressions/partial/rv/high/
+    mkdir Output/MacroRegressions/Regressions/partial/rv/low/
 end
 
 if ~exist('Output/MacroRegressions/StdBuckets/', 'dir')
@@ -70,46 +71,81 @@ addpath([root_dir filesep 'Output' filesep 'MacroRegressions'])
 irEnv = {lowIR, highIR};
 rateNames = {'Low Interest', 'High Interest'};
 regimes = {'low', 'high'}; 
+
 volData = {vrp, blackVol, SigA};
 volFolder = {'vrp', 'iv', 'rv'};
+volNames = {'Variance Risk Premium', 'Implied Volatility', ...
+    'Realized Volatility'};
+
+regressVar = 'SurpriseZscore';
 
 %% Regression on Macro surprises over full economic horizon 
 
-outDirectory = 'Output/MacroRegressions/RegressTermStructure/full';
+outDirectory = 'Output/MacroRegressions/Regressions/full';
 
 % iterate through each volatility data {vrp, blackVol, SigA}
 for data = 1:3
        
     % perform regression on bucket economic releases
-    concatTB = regression(ecoData, volData{data}, 'Surprise', ecoMap);
+    regTB = regression(ecoData, volData{data}, regressVar, ecoMap);
     name = strcat(outDirectory, '/', volFolder{data}, '/', ...
         '/regressCoefs.csv');
-    writetable(concatTB, name);
+    
+    % write regression coeffcients to table
+    writetable(regTB, name);
 
 end
 
-fprintf('Regression .csv were created over the full span.\n');
+%% Regression on interest rates over partial economic horizon 
 
-%% Tenor Structure for Events (using VRP)
+outDirectory = 'Output/MacroRegressions/Regressions/partial';
 
-% load in data from VRP regressed values 
-vrpRegress = readtable(strcat(outDirectory, '/vrp/regressCoefs.csv'));
-ivRegress = readtable(strcat(outDirectory, '/iv/regressCoefs.csv'));
-rvRegress = readtable(strcat(outDirectory, '/rv/regressCoefs.csv'));
+% iterate through each interest rate regime {'low', 'high'}
+for index = 1:2
 
-% construct the term structure graphs of regression coeficients
-termStructure(vrpRegress, "RegressTermStructure/full/vrp", keys, ...
-    econVars, 'VRP Regress on Economic Surprises (full sample)');
-termStructure(ivRegress, "RegressTermStructure/full/iv",  keys, ....
-    econVars, 'Implied Vol Regress on Economic Surprises (full sample)');
-termStructure(rvRegress, "RegressTermStructure/full/rv",  keys, ...
-    econVars, 'Realized Vol Regress on Economic Surprises (full sample)');
+    % selects the interest rate environment 
+    rateDf = irEnv{:, index};
 
-fprintf('Term structure graphs were created.\n');
+    % filter economic dates according to interest rate regime 
+    filterEco = ecoData(ismember(ecoData{:, 1}, rateDf{:, 1}), :);
+
+    % perform regression on bucket economic releases
+    regTB = regression(filterEco, yeildCurve, regressVar, ecoMap);
+    name = strcat(outDirectory,'/',regimes{index},'RegressPCACoefYeilds.csv');
+
+    % write regression coeffcients to table
+    writetable(regTB, name);
+end
+
+%% Regression on interest rates over partial economic horizon wt uncertainity buckets
+
+outDirectory = 'Output/MacroRegressions/Regressions/partial';
+
+% iterate through each interest rate regime {'low', 'high'}
+for index = 1:2
+
+    % selects the interest rate environment 
+    rateDf = irEnv{:, index};
+
+    % filter economic dates according to interest rate regime and bucket 
+    filterEco1 = ecoSTD25(ismember(ecoSTD25{:, 1}, rateDf{:, 1}), :);
+    filterEco2 = ecoSTD75(ismember(ecoSTD75{:, 1}, rateDf{:, 1}), :);
+
+    % perform regression on bucket economic releases
+    regTB1 = regression(filterEco1, yeildCurve, regressVar, ecoMap);
+    regTB2 = regression(filterEco2, yeildCurve, regressVar, ecoMap);
+    
+    name1 = strcat(outDirectory,'/',regimes{index},'RegressPCACoefYeilds25.csv');
+    name2 = strcat(outDirectory,'/',regimes{index},'RegressPCACoefYeilds75.csv');
+    
+    % write regression coeffcients to table
+    writetable(regTB1, name1); 
+    writetable(regTB2, name2);
+end
 
 %% Regression on Macro surprises over partial economic horizons
 
-outDirectory = 'Output/MacroRegressions/RegressTermStructure/partial';
+outDirectory = 'Output/MacroRegressions/Regressions/partial';
 
 % iterate through each volatility data {vrp, blackVol, SigA}
 for data = 1:3
@@ -118,465 +154,89 @@ for data = 1:3
     for index = 1:2
         
         % selects the interest rate environment 
-        df = irEnv{:, index};
+        rateDf = irEnv{:, index};
 
         % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
+        filterEco = ecoData(ismember(ecoData{:, 1}, rateDf{:, 1}), :);
         
         % perform regression on bucket economic releases
-        concatTB = regression(filterEco, volData{data}, 'StdDev', ecoMap);
+        regTB = regression(filterEco, volData{data}, regressVar, ecoMap);
         name = strcat(outDirectory, '/', volFolder{data}, '/', ...
             regimes{index}, '/regressCoefs.csv');
-        writetable(concatTB, name);
+        
+        % write regression coeffcients to table
+        writetable(regTB, name);
     end
     
 end
 
-fprintf('Regression .csv files for partial economic horizons complete.\n');
+%% Regression on interest rates over partial economic horizon 
 
-%% Tenor Structure for Events (using VRP)
+outDirectory = 'Output/MacroRegressions/Regressions/full';
 
-% load in data from VRP regressed values 
-vrpLowRegress = readtable(strcat(outDirectory, ...
-    '/vrp/low/regressCoefs.csv'));
-ivLowRegress = readtable(strcat(outDirectory, ...
-    '/iv/low/regressCoefs.csv'));
-rvLowRegress = readtable(strcat(outDirectory, ...
-    '/rv/low/regressCoefs.csv'));
+% perform regression on bucket economic releases
+regTB = regression(ecoData, yeildCurve, regressVar, ecoMap);
+name = strcat(outDirectory, '/', 'regressCoefsYeilds.csv');
 
-vrpHighRegress = readtable(strcat(outDirectory, ...
-    '/vrp/high/regressCoefs.csv'));
-ivHighRegress = readtable(strcat(outDirectory, ...
-    '/iv/high/regressCoefs.csv'));
-rvHighRegress = readtable(strcat(outDirectory, ...
-    '/rv/high/regressCoefs.csv'));
-
-% construct the term structure graphs of regression coeficients
-termStructure(vrpLowRegress, "RegressTermStructure/partial/vrp/low", ...
-    keys, econVars, ...
-    'VRP Regress on Economic Surprises (low interest regime)');
-termStructure(ivLowRegress, "RegressTermStructure/partial/iv/low", ...
-    keys, econVars, ...
-    'Implied Vol Regress on Economic Surprises (low interest regime)');
-termStructure(rvLowRegress, "RegressTermStructure/partial/rv/low", ...
-    keys, econVars, ...
-    'Realized Vol Regress on Economic Surprises (low interest regime)');
-
-termStructure(vrpHighRegress, "RegressTermStructure/partial/vrp/high", ...
-    keys, econVars, ...
-    'VRP Regress on Economic Surprises (high interest regime)');
-termStructure(ivHighRegress, "RegressTermStructure/partial/iv/high", ...
-    keys, econVars, ...
-    'Implied Vol Regress on Economic Surprises (high interest regime)');
-termStructure(rvHighRegress, "RegressTermStructure/partial/rv/high", ...
-    keys, econVars, ...
-    'Realized Vol Regress on Economic Surprises (high interest regime)')
-
-fprintf('Term structure graphs for partial economic horizons created.\n');
+% write regression coeffcients to table
+writetable(regTB, name);
 
 %% Regression on Macro surprises over standard deviation buckets 
 
-outDirectory = 'Output/MacroRegressions/RegressTermStructure/full';
+outDirectory = 'Output/MacroRegressions/Regressions/full';
 
 % iterate through each volatility data {vrp, blackVol, SigA}
-for data = 2:2
+for data = 1:3
     
-    % store economic calender dates for high/low forecast uncertainity 
-    small_unc = table();
-    large_unc = table();
-    
-    for i = keys(2)
-
-        % filter data by macro economic event
-        filterData = ecoData(ismember(ecoData{:, 'Ticker'}, i), :);
-        
-        % compute the top and bottom decile/quartiles forecast STD
-        bottom25 = quantile(filterData.StdDev, .25);
-        top25 = quantile(filterData.StdDev, .75);
-
-        % bucket out economic figures according to std value
-        ecoBin1 = filterData((filterData.StdDev <= bottom25), :);
-        ecoBin2 = filterData((filterData.StdDev >= top25), :);
-
-        % concat vertically all economic annoucments matching criteria
-        small_unc = [small_unc; ecoBin1];
-        large_unc = [large_unc; ecoBin2];
-    end
-  
     % perform regression on bucket economic releases
-    concatTB = regression(small_unc, volData{data}, 'SurpriseZscore', ...
+    regTB = regression(ecoSTD10, volData{data}, regressVar, ...
         ecoMap);
-    disp(concatTB)
-%     name = strcat(outDirectory, '/', volFolder{data}, '/', ...
-%         '/regressCoefs25bucket.csv');
-%     writetable(concatTB, name);
-    
-%     concatTB = regression(large_unc, volData{data}, 'SurpriseZscore', ...
-%         ecoMap);
-%     name = strcat(outDirectory, '/', volFolder{data}, '/', ...
-%         '/regressCoefs75bucket.csv');
-%     writetable(concatTB, name);
+    name = strcat(outDirectory, '/', volFolder{data}, '/', ...
+        '/regressCoefs10bucket.csv');
+    writetable(regTB, name);
+
+    regTB = regression(ecoSTD25, volData{data}, regressVar, ...
+        ecoMap);
+    name = strcat(outDirectory, '/', volFolder{data}, '/', ...
+        '/regressCoefs25bucket.csv');
+    writetable(regTB, name);
+
+    regTB = regression(ecoSTD75, volData{data}, regressVar, ...
+        ecoMap);
+    name = strcat(outDirectory, '/', volFolder{data}, '/', ...
+        '/regressCoefs75bucket.csv');
+    writetable(regTB, name);
    
-end
-
-fprintf('Regression .csv were created over the std span.\n');
-
-%% Interest rate buckets, alongside economic forecast STD buckets (VRP)
-
-for i = 1:10
-    fig = figure('visible', 'off');                 
-    set(gcf, 'Position', [100, 100, 1500, 600]);   
-    
-    for index = 1:2
-        % selects the interest rate environment 
-        df = irEnv{:, index};
-        
-        % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
-        
-        event = keys(i);    % economic event  
-
-        % filter data by macro economic event
-        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
-
-        % compute the top and bottom decile/quartiles forecast STD per event
-        bottom10 = quantile(filterData.StdDev, .10);
-        bottom25 = quantile(filterData.StdDev, .25);
-        top25 = quantile(filterData.StdDev, .75);
-        top10 = quantile(filterData.StdDev, .90);
-        
-        % bucket out economic figures according to std value
-        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
-        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
-        ecoBin3 = filterData((filterData.StdDev >= top25), :);
-        ecoBin4 = filterData((filterData.StdDev >= top10), :);
-
-        % match target dates for each STD period 
-        datesBin1 = matchingError(ecoBin1, vrp, 1);
-        datesBin2 = matchingError(ecoBin2, vrp, 1);
-        datesBin3 = matchingError(ecoBin3, vrp, 1);
-        datesBin4 = matchingError(ecoBin4, vrp, 1);
-
-        % change in regressed values pre-post announcement 
-        [diffBin1, ~] = differenceSplit(ecoBin1, vrp, datesBin1);
-        [diffBin2, ~] = differenceSplit(ecoBin2, vrp, datesBin2);
-        [diffBin3, ~] = differenceSplit(ecoBin3, vrp, datesBin3);
-        [diffBin4, ~] = differenceSplit(ecoBin4, vrp, datesBin4);
-
-        % building out the average difference cell per STD period
-        % function computes the mean, column wise (per each security) 
-        y = {mean(diffBin1(:, :),'omitnan'), ...
-            mean(diffBin2(:, :),'omitnan'), ...
-            mean(diffBin3(:, :),'omitnan'), ...
-            mean(diffBin4(:, :),'omitnan')};
-
-        % computes the simple average acroos row (per each date) - returns
-        % scaler representing average VRP change across time and security
-        simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
-        
-        % plotting out the bucket changes by positive/negative leaning
-        subplot(1, 2, index);
-        bar(simpleAvg); title(strcat(rateNames(index), ...
-            ' Rate Environment'));
-        xticks([1, 2, 3, 4]); 
-        xticklabels({'10th', '25th', '75th', '90th'});
-        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
-        xlabel('Forecast Standard Deviation Percentile', 'FontSize', 8);
-        lgd = legend({'VRP Change'}, 'Location', 'northeast'); 
-        lgd.FontSize = 8;                                                       
-    
-    end
-    
-    subplot(1, 2, 1);
-    ylabel(strcat("Average VRP Change for ", econVars(i)), 'FontSize', 8);
-    
-    % export the image to Interest Bucket for VRP measures
-    name = strcat("Output/MacroRegressions/StdBuckets/vrp/", ...
-        event, ".jpg");
-    exportgraphics(fig, name);
+    regTB = regression(ecoSTD90, volData{data}, regressVar, ...
+        ecoMap);
+    name = strcat(outDirectory, '/', volFolder{data}, '/', ...
+        '/regressCoefs90bucket.csv');
+    writetable(regTB, name)
     
 end
 
-fprintf('VRP reponse graphs were created for interest rate regimes.\n');
+%% Regression on Interest rates over standard deviation buckets 
 
-addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
-    'vrpInterestBuckets']) 
+outDirectory = 'Output/MacroRegressions/Regressions/full';
 
-%% Interest rate buckets, alongside economic forecast STD buckets (IV)
+% perform regression on bucket economic releases
+regTB = regression(ecoSTD10, yeildCurve, regressVar, ecoMap);
+name = strcat(outDirectory, '/', 'regressCoefsYeilds10.csv');
+writetable(regTB, name);
 
-for i = 1:1
-    fig = figure('visible', 'on');                 
-    set(gcf, 'Position', [100, 100, 1500, 600]);   
-    
-    for index = 1:2
-        % selects the interest rate environment 
-        df = irEnv{:, index};
-        
-        % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
-        
-        event = keys(i);    % economic event  
+regTB = regression(ecoSTD25, yeildCurve, regressVar, ecoMap);
+name = strcat(outDirectory, '/', 'regressCoefsYeilds25.csv');
+writetable(regTB, name)
 
-        % filter data by macro economic event
-        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
+regTB = regression(ecoSTD75, yeildCurve, regressVar, ecoMap);
+name = strcat(outDirectory, '/', 'regressCoefsYeilds75.csv');
+writetable(regTB, name)
 
-        % compute the top and bottom decile/quartiles forecast STD per event
-        bottom10 = quantile(filterData.StdDev, .10);
-        bottom25 = quantile(filterData.StdDev, .25);
-        top25 = quantile(filterData.StdDev, .75);
-        top10 = quantile(filterData.StdDev, .90);
-        
-        % bucket out economic figures according to std value
-        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
-        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
-        ecoBin3 = filterData((filterData.StdDev >= top25), :);
-        ecoBin4 = filterData((filterData.StdDev >= top10), :);
+regTB = regression(ecoSTD90, yeildCurve, regressVar, ecoMap);
+name = strcat(outDirectory, '/', 'regressCoefsYeilds90.csv');
+writetable(regTB, name)
 
-        % match target dates for each STD period 
-        datesBin1 = matchingError(ecoBin1, blackVol, 1);
-        datesBin2 = matchingError(ecoBin2, blackVol, 1);
-        datesBin3 = matchingError(ecoBin3, blackVol, 1);
-        datesBin4 = matchingError(ecoBin4, blackVol, 1);
-
-        % change in regressed values pre-post announcement 
-        [diffBin1, ~] = differenceSplit(ecoBin1, blackVol, datesBin1);
-        [diffBin2, ~] = differenceSplit(ecoBin2, blackVol, datesBin2);
-        [diffBin3, ~] = differenceSplit(ecoBin3, blackVol, datesBin3);
-        [diffBin4, ~] = differenceSplit(ecoBin4, blackVol, datesBin4);
-
-        % building out the average difference cell per STD period
-        % function computes the mean, column wise (per each security) 
-        y = {mean(diffBin1(:, :),'omitnan'), ...
-            mean(diffBin2(:, :),'omitnan'), ...
-            mean(diffBin3(:, :),'omitnan'), ...
-            mean(diffBin4(:, :),'omitnan')};
-
-        % computes the simple average acroos row (per each date) - returns
-        % scaler representing average VRP change across time and security
-        simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
-        
-        % plotting out the bucket changes by positive/negative leaning
-        subplot(1, 2, index);
-        bar(simpleAvg); title(strcat(rateNames(index), ...
-            ' Rate Environment'));
-        xticks([1, 2, 3, 4]); 
-        xticklabels({'10th', '25th', '75th', '90th'});
-        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
-        xlabel('Forecast Standard Deviation Bucket', 'FontSize', 8);
-        lgd = legend({'Implied Vol Change'}, 'Location', 'northeast'); 
-        lgd.FontSize = 8;                                                       
-    
-    end
-    
-    subplot(1, 2, 1);
-    ylabel(strcat("Average Implied Volatility Change for ", ...
-        econVars(i)), 'FontSize', 8);
-    
-    % export the image to Interest Bucket for VRP measures
-    name = strcat("Output/MacroRegressions/StdBuckets/iv/", ...
-        event, ".jpg");
-    exportgraphics(fig, name);
-    
-end
-
-fprintf('IV reponse graphs were created for interest rate regimes.\n');
-
-addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
-    'ivInterestBuckets']) 
-
-%% Interest rate buckets, alongside economic forecast STD buckets (RV)
-
-for i = 1:10
-    fig = figure('visible', 'off');                 
-    set(gcf, 'Position', [100, 100, 1500, 600]);   
-    
-    for index = 1:2
-        % selects the interest rate environment 
-        df = irEnv{:, index};
-        
-        % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
-        
-        event = keys(i);    % economic event  
-
-        % filter data by macro economic event
-        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
-
-        % compute the top and bottom decile/quartiles forecast STD per event
-        bottom10 = quantile(filterData.StdDev, .10);
-        bottom25 = quantile(filterData.StdDev, .25);
-        top25 = quantile(filterData.StdDev, .75);
-        top10 = quantile(filterData.StdDev, .90);
-        
-        % bucket out economic figures according to std value
-        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
-        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
-        ecoBin3 = filterData((filterData.StdDev >= top25), :);
-        ecoBin4 = filterData((filterData.StdDev >= top10), :);
-
-        % match target dates for each STD period 
-        datesBin1 = matchingError(ecoBin1, SigA, 1);
-        datesBin2 = matchingError(ecoBin2, SigA, 1);
-        datesBin3 = matchingError(ecoBin3, SigA, 1);
-        datesBin4 = matchingError(ecoBin4, SigA, 1);
-
-        % change in regressed values pre-post announcement 
-        [diffBin1, ~] = differenceSplit(ecoBin1, SigA, datesBin1);
-        [diffBin2, ~] = differenceSplit(ecoBin2, SigA, datesBin2);
-        [diffBin3, ~] = differenceSplit(ecoBin3, SigA, datesBin3);
-        [diffBin4, ~] = differenceSplit(ecoBin4, SigA, datesBin4);
-
-        % building out the average difference cell per STD period
-        % function computes the mean, column wise (per each security) 
-        y = {mean(diffBin1(:, :),'omitnan'), ...
-            mean(diffBin2(:, :),'omitnan'), ...
-            mean(diffBin3(:, :),'omitnan'), ...
-            mean(diffBin4(:, :),'omitnan')};
-
-        % computes the simple average acroos row (per each date) - returns
-        % scaler representing average VRP change across time and security
-        simpleAvg = [mean(y{1}); mean(y{2}); mean(y{3}); mean(y{4})];
-        
-        % plotting out the bucket changes by positive/negative leaning
-        subplot(1, 2, index);
-        bar(simpleAvg); title(strcat(rateNames(index), ...
-            ' Rate Environment'));
-        xticks([1, 2, 3, 4]); 
-        xticklabels({'10th', '25th', '75th', '90th'});
-        ylim([min(min(simpleAvg))-0.5, max(max(simpleAvg))+0.5])
-        xlabel('Forecast Standard Deviation Bucket', 'FontSize', 8);
-        lgd = legend({'Realized Vol Change'}, 'Location', 'best'); 
-        lgd.FontSize = 8;                                                       
-    
-    end
-    
-    subplot(1, 2, 1);
-    ylabel(strcat("Average Realized Volatility Change for ", ...
-        econVars(i)), 'FontSize', 8);
-    
-    % export the image to Interest Bucket for VRP measures
-    name = strcat("Output/MacroRegressions/StdBuckets/rv/", ...
-        event, ".jpg");
-    exportgraphics(fig, name);
-    
-end
-
-fprintf('RV reponse graphs were created for interest rate regimes.\n');
-
-addpath([root_dir filesep 'Output' filesep 'MacroRegressions' filesep ...
-    'rvInterestBuckets']) 
-
-%% Timeseries of VRP changes by STD buckets 
-
-fig = figure('visible', 'off');                 
-set(gcf, 'Position', [100, 100, 1100, 600]);   
-
-a = get(gca,'XTickLabel');
-set(gca,'XTickLabel',a,'FontName','Times','fontsize',8)
-
-% allocate memory for low and high interest rate regime 
-vrpIR = zeros(10, 2);
-
-% iterate through economic variables
-for i = 1:10
-    
-    % iterate through interest rate regime
-    for index = 1:2
-        
-        % selects the interest rate environment 
-        df = irEnv{:, index};
-        
-        % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
-        
-        event = keys(i);    % economic event  
-
-        % filter data by macro economic event
-        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
-
-        % compute the top and bottom decile/quartiles forecast STD per event
-        bottom10 = quantile(filterData.StdDev, .10);
-        bottom25 = quantile(filterData.StdDev, .25);
-        top25 = quantile(filterData.StdDev, .75);
-        top10 = quantile(filterData.StdDev, .90);
-        
-        % bucket out economic figures according to std value
-        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
-        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
-        ecoBin3 = filterData((filterData.StdDev >= top25), :);
-        ecoBin4 = filterData((filterData.StdDev >= top10), :);
-
-        % match target dates for each STD period 
-        datesBin1 = matchingError(ecoBin1, vrp, 1);
-        datesBin2 = matchingError(ecoBin2, vrp, 1);
-        datesBin3 = matchingError(ecoBin3, vrp, 1);
-        datesBin4 = matchingError(ecoBin4, vrp, 1);
-
-        % change in regressed values pre-post announcement 
-        [diffBin1, ~] = differenceSplit(ecoBin1, vrp, datesBin1);
-        [diffBin2, ~] = differenceSplit(ecoBin2, vrp, datesBin2);
-        [diffBin3, ~] = differenceSplit(ecoBin3, vrp, datesBin3);
-        [diffBin4, ~] = differenceSplit(ecoBin4, vrp, datesBin4);
-
-        % building out the average difference cell per STD period
-        % function computes the mean, column wise (per each security) 
-        y = [mean(mean(diffBin1(:, :), 'omitnan')), ...
-            mean(mean(diffBin2(:, :), 'omitnan')), ...
-            mean(mean(diffBin3(:, :), 'omitnan')), ...
-            mean(mean(diffBin4(:, :), 'omitnan'))];
-
-        % scaler representing average VRP change across time and bucket
-        simpleAvg = mean(y, 'omitnan'); 
-                                                             
-        vrpIR(i, index) = simpleAvg;
-        
-    end
-    
-end
-
-% compute confidence intervals for both low/high rate regimes (90%)
-confidence = bootci(2000, {@mean, vrpIR}, 'alpha', 0.10);
-
-hold on; 
-% plottin the long run average and time series of VRP per rate regime 
-h(1,1) = scatter((1:10)', vrpIR(:, 1), 'red', 'd', 'filled', ...
-    'DisplayName', 'Low Rate Regime', 'MarkerEdgeColor', 'black');
-h(2,1) = plot(zeros(10, 1)+mean(vrpIR(:, 1)), 'DisplayName', ...
-    'Low Rate Avg.', 'LineStyle', '-', 'LineWidth', 2, 'color', 'red');
-h(3,1) = plot(zeros(10, 1)+confidence(1, 1), 'DisplayName', ...
-    '90% Confidence (Low Rate)', 'LineStyle', '--', 'color', 'red');
-
-h(4,1) = scatter((1:10)', vrpIR(:, 2), 'blue', 's', 'filled', ...
-    'DisplayName', 'High Rate Regime', 'MarkerEdgeColor', 'black');
-h(5,1) = plot(zeros(10, 1)+mean(vrpIR(:, 2)), 'DisplayName', ...
-    'High Rate Avg.', 'LineStyle', '-', 'LineWidth', 2, 'color', 'blue');
-h(6,1) = plot(zeros(10, 1)+confidence(1, 2), 'DisplayName', ...
-    '90% Confidence (High Rate)', 'LineStyle', '--', 'color', 'blue');
-
-h(7,1) = plot(zeros(10, 1)+confidence(2, 1), 'DisplayName', ...
-    '90% Confidence (Low Rate)', 'LineStyle', '--', 'color', 'red');
-h(8,1) = plot(zeros(10, 1)+confidence(2, 2), 'DisplayName', ...
-    '90% Confidence (High Rate)', 'LineStyle', '--', 'color', 'blue');
-
-xticks(1:10); xticklabels(econVars); xtickangle(30);
-title({'VRP Responsivness to Economic Annoucments', ...
-    'Responses are taken at STD percentiles (0.10, 0.25, 0.75, 0.90)'});
-ylabel("Average VRP Change by STD Bucket", 'FontSize', 8);
-legend(h(1:6))
-
-% export the image to Interest Bucket for VRP measures
-name = strcat("Output/MacroRegressions/avgVRP.jpg");
-exportgraphics(fig, name);
-
-fprintf('VRP time series graphs were created.\n');
-
-
-%% Timeseries of Implied Volatility changes by STD buckets 
+%% Implied Volatility changes across event horizon 
 
 fig = figure('visible', 'off');                 
 set(gcf, 'Position', [100, 100, 1100, 600]);   
@@ -597,8 +257,7 @@ for i = 1:10
         df = irEnv{:, index};
         
         % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
+        filterEco = ecoData(ismember(ecoData{:, 1}, df{:, 1}), :);
         
         event = keys(i);    % economic event  
         
@@ -679,125 +338,15 @@ legend(h(1:6))
 name = strcat("Output/MacroRegressions/avgIV.jpg");
 exportgraphics(fig, name);
 
-fprintf('IV time series graphs were created.\n');
+%% T-distribution - Performing regression on reduced economic figures 
 
-%% Timeseries of Realized Volatility changes by STD buckets 
-
-fig = figure('visible', 'off');                 
-set(gcf, 'Position', [100, 100, 1200, 600]);   
-
-a = get(gca,'XTickLabel');
-set(gca,'XTickLabel',a,'FontName','Times','fontsize',8)
-
-% allocate memory for low and high interest rate regime 
-rvIR = zeros(10, 2);
-stdErr = zeros(10, 2);
-
-% iterate through economic variables
-for i = 1:10
-    
-    % iterate through interest rate regime
-    for index = 1:2
-        
-        % selects the interest rate environment 
-        df = irEnv{:, index};
-        
-        % filter economic dates according to interest rate regime 
-        filterEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            df{:, 'DateMod'}), :);
-        
-        event = keys(i);    % economic event  
-
-        % filter data by macro economic event
-        filterData = filterEco(ismember(filterEco{:, 'Ticker'}, event), :);
-
-        % compute the top and bottom decile/quartiles forecast STD per event
-        bottom10 = quantile(filterData.StdDev, .10);
-        bottom25 = quantile(filterData.StdDev, .25);
-        top25 = quantile(filterData.StdDev, .75);
-        top10 = quantile(filterData.StdDev, .90);
-        
-        % bucket out economic figures according to std value
-        ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
-        ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
-        ecoBin3 = filterData((filterData.StdDev >= top25), :);
-        ecoBin4 = filterData((filterData.StdDev >= top10), :);
-
-        % match target dates for each STD period 
-        datesBin1 = matchingError(ecoBin1, SigA, 1);
-        datesBin2 = matchingError(ecoBin2, SigA, 1);
-        datesBin3 = matchingError(ecoBin3, SigA, 1);
-        datesBin4 = matchingError(ecoBin4, SigA, 1);
-
-        % change in regressed values pre-post announcement 
-        [diffBin1, ~] = differenceSplit(ecoBin1, SigA, datesBin1);
-        [diffBin2, ~] = differenceSplit(ecoBin2, SigA, datesBin2);
-        [diffBin3, ~] = differenceSplit(ecoBin3, SigA, datesBin3);
-        [diffBin4, ~] = differenceSplit(ecoBin4, SigA, datesBin4);
-
-        % building out the average difference cell per STD period
-        % function computes the mean, column wise (per each security) 
-        y = [mean(mean(diffBin1(:, :), 'omitnan')), ...
-            mean(mean(diffBin2(:, :), 'omitnan')), ...
-            mean(mean(diffBin3(:, :), 'omitnan')), ...
-            mean(mean(diffBin4(:, :), 'omitnan'))];
-
-        % scaler representing average VRP change across time and bucket
-        simpleAvg = mean(y, 'omitnan');
-        simpleSTD = std(std([diffBin1; diffBin2; diffBin3; diffBin4], ...
-           'omitnan'));
-                                                             
-        rvIR(i, index) = simpleAvg;
-        stdErr(i, index) = simpleSTD;
-    end
-    
-end
-
-% compute confidence intervals for both low/high rate regimes (90%)
-confidence = bootci(2000, {@mean, rvIR}, 'alpha', 0.10);
-
-hold on; 
-% plottin the long run average and time series of VRP per rate regime 
-h(1,1) = scatter((1:10)', rvIR(:, 1), 'blue', 'd', 'filled', ...
-    'DisplayName', 'Low Rate Regime', 'MarkerEdgeColor', 'black');
-h(2,1) = plot(zeros(10, 1)+mean(rvIR(:, 1)), 'DisplayName', ...
-    'Low Rate Avg.', 'LineStyle', '-', 'LineWidth', 2, 'color', 'blue');
-h(3,1) = plot(zeros(10, 1)+confidence(1, 1), 'DisplayName', ...
-    '90% Confidence (Low Rate)', 'LineStyle', '--', 'color', 'blue');
-
-h(4,1) = scatter((1:10)', rvIR(:, 2), 'green', 's', 'filled', ...
-    'DisplayName', 'High Rate Regime', 'MarkerEdgeColor', 'black');
-h(5,1) = plot(zeros(10, 1)+mean(rvIR(:, 2)), 'DisplayName', ...
-    'High Rate Avg.', 'LineStyle', '-', 'LineWidth', 2, 'color', 'green');
-h(6,1) = plot(zeros(10, 1)+confidence(1, 2), 'DisplayName', ...
-    '90% Confidence (High Rate)', 'LineStyle', '--', 'color', 'green');
-
-h(7,1) = plot(zeros(10, 1)+confidence(2, 1), 'DisplayName', ...
-    '90% Confidence (Low Rate)', 'LineStyle', '--', 'color', 'blue');
-h(8,1) = plot(zeros(10, 1)+confidence(2, 2), 'DisplayName', ...
-    '90% Confidence (High Rate)', 'LineStyle', '--', 'color', 'green');
-
-xticks(1:10); xticklabels(econVars); xtickangle(30);
-title({'Realized Volatility Responsivness to Economic Annoucments', ...
-    'Responses are taken at STD percentiles (0.10, 0.25, 0.75, 0.90)'});
-ylabel("Average Implied Volatility Change by STD Bucket", 'FontSize', 8);
-legend(h(1:6))
-
-% export the image to Interest Bucket for VRP measures
-name = strcat("Output/MacroRegressions/avgRV.jpg");
-exportgraphics(fig, name);
-
-fprintf('Realized Volatility time series graphs were created.\n');
-
-%% Distribution of vol changes across standard deviation for forecast 
-
-fig = figure('visible', 'on');  
+fig = figure('visible', 'off');  
 set(gcf, 'Position', [100, 100, 1250, 600]);
 rng('default')  % For reproducibility
 
-event = 'NFP TCH Index';
-filterData1 = small_unc(strcmp(small_unc.Ticker, event), :);
-filterData2 = large_unc(strcmp(large_unc.Ticker, event), :);
+event = 'CONSSENT Index';
+filterData1 = ecoSTD25(strcmp(ecoSTD25.Ticker, event), :);
+filterData2 = ecoSTD75(strcmp(ecoSTD75.Ticker, event), :);
 
 % match target dates for each STD period 
 targetDate1 = matchingError(filterData1, blackVol, 1);
@@ -807,145 +356,180 @@ targetDate2 = matchingError(filterData2, blackVol, 1);
 [diff1, eco1] = differenceSplit(filterData1, blackVol, targetDate1);
 [diff2, eco2] = differenceSplit(filterData2, blackVol, targetDate2);
 
+% compute the pre/post filter difference vector
+diff1Vector = mean(diff1, 2);
+diff2Vector = mean(diff2, 2);
+
 % perform regression on Z-scores to determine efficacy
-[bv1,~,R2v1,~,~,~,F1] = olsgmm(mean(diff1, 2), eco1.SurpriseZscore, 0, 1);
-[bv2,~,R2v2,~,~,~,F2] = olsgmm(mean(diff2, 2), eco2.SurpriseZscore, 0, 1);
+[bv1,~,~,~,~,~,F1] = olsgmm(diff1Vector, eco1.SurpriseZscore, 0, 1);
+[bv2,~,~,~,~,~,F2] = olsgmm(diff2Vector, eco2.SurpriseZscore, 0, 1);
+
+SEM = std(diff1Vector)/sqrt(4);                     % Standard Error
+ts = tinv([0.005  0.995], 3);                       % T-Score 99% Con 3-df
+ci = mean(diff1Vector) + ts*SEM;                    % Confidence Intervals
+
+[bv3,~,~,~,~,~,F3] = olsgmm(diff1Vector((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), eco1.SurpriseZscore((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), 0, 1);
 
 % compute a scatter histogram for the average change in vol measure
 subplot(1, 2, 1); hold on; 
-scatter(eco1.SurpriseZscore, mean(diff1, 2), 'MarkerFaceColor', 'blue', ...
-    'MarkerEdgeColor', 'black', 'DisplayName', '25th Percentile'); 
-plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv1, 'LineStyle', '--', ...
-    'color', 'black', 'DisplayName', ...
-    strcat("R^2 ", string(round(R2v1, 3)), ", Pvalue ", string(round(F1(3), 2))))
-title('Non-farm Payrolls Response under low uncertainty', 'FontSize', 10);
-legend('show')
+scatter(eco1.SurpriseZscore, diff1Vector, 'MarkerFaceColor', 'blue', ...
+    'MarkerEdgeColor', 'black', 'DisplayName', 'Raw Data'); 
+scatter(eco1.SurpriseZscore((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), diff1Vector((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), 'MarkerFaceColor', 'red', ...
+    'MarkerEdgeColor', 'black', 'MarkerFaceAlpha',1, 'DisplayName', ...
+    'T-dist 99%, 3-df'); 
 
-subplot(1, 2, 2); hold on; 
-scatter(eco2.SurpriseZscore, mean(diff2, 2), 'MarkerFaceColor', 'red', ...
-    'MarkerEdgeColor', 'black', 'DisplayName', '75th Percentile')
-plot(eco2.SurpriseZscore, eco2.SurpriseZscore*bv2, 'LineStyle', '--', ...
-    'color', 'black', 'DisplayName', ...
-    strcat("R^2 ", string(round(R2v2, 3)), ", Pvalue ", string(round(F2(3), 2))))
-title('Non-farm Payrolls Response under high uncertainty', 'FontSize', 10);
+plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv1, 'LineStyle', '--', ...
+    'color', 'blue', 'DisplayName', ...
+    strcat("\beta=", string(round(bv1, 3)), ", pValue=", ...
+    string(round(F1(3), 2))))
+plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv3, 'LineStyle', '--', ...
+    'color', 'red', 'DisplayName', ...
+    strcat("\beta=", string(round(bv3, 3)), ", pValue=", ...
+    string(round(F3(3), 2))))
 
 xlabel(strcat("Economic Surprise Z-score"), 'fontsize', 9)
-ylabel("Change in Implied Volatility", 'fontsize', 9)
+ylabel(["Change in Implied Volatility", "Low Uncertainty"], 'fontsize', 9)
 legend('show')
 
-% % export the image to Interest Bucket for VRP measures
-% name = strcat("Output/MacroRegressions/scatterHist.jpg");
-% exportgraphics(fig, name);
+% ======================================================================
 
-%% Partial least squares regression (PLSR)
+SEM = std(diff2Vector)/sqrt(4);                     % Standard Error
+ts = tinv([0.005  0.995], 3);                       % T-Score 99% Con 3-df
+ci = mean(diff2Vector) + ts*SEM;                    % Confidence Intervals
+
+[bv4,~,~,~,~,~,F4] = olsgmm(diff2Vector((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), eco2.SurpriseZscore((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), 0, 1);
+
+subplot(1, 2, 2); hold on; 
+scatter(eco2.SurpriseZscore, diff2Vector, 'MarkerFaceColor', 'blue', ...
+    'MarkerEdgeColor', 'black', 'DisplayName', 'Raw Data')
+scatter(eco1.SurpriseZscore((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), diff2Vector((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), 'MarkerFaceColor', 'red', ...
+    'MarkerEdgeColor', 'black', 'MarkerFaceAlpha',1, 'DisplayName', ...
+    'T-dist 99%, 3-df');
+
+plot(eco2.SurpriseZscore, eco2.SurpriseZscore*bv2, 'LineStyle', '--', ...
+    'color', 'blue', 'DisplayName', ...
+    strcat("\beta=", string(round(bv2, 3)), ", pValue=", ...
+    string(round(F2(3), 2))))
+plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv4, 'LineStyle', '--', ...
+    'color', 'red', 'DisplayName', ...
+    strcat("\beta=", string(round(bv4, 3)), ", pValue=", ...
+    string(round(F4(3), 2))))
+
+xlabel(strcat("Economic Surprise Z-score"), 'fontsize', 9)
+ylabel(["Change in Implied Volatility", "High Uncertainty"], 'fontsize', 9)
+legend('show')
+
+% export the image to Interest Bucket for VRP measures
+name = strcat("Output/MacroRegressions/tdistRegression.jpg");
+exportgraphics(fig, name);
+
+%% Normal-distribution - Performing regression on reduced economic figures 
 
 fig = figure('visible', 'off');  
 set(gcf, 'Position', [100, 100, 1250, 600]);
 rng('default')  % For reproducibility
 
-event = 'FDTR Index';
-filterData = ecoData(strcmp(ecoData.Ticker, event), :);
+event = 'CONSSENT Index';
+filterData1 = ecoSTD25(strcmp(ecoSTD25.Ticker, event), :);
+filterData2 = ecoSTD75(strcmp(ecoSTD75.Ticker, event), :);
 
 % match target dates for each STD period 
-targetDate = matchingError(filterData, vrp, 1);
+targetDate1 = matchingError(filterData1, blackVol, 1);
+targetDate2 = matchingError(filterData2, blackVol, 1);
 
 % change in regressed values pre-post announcement 
-[diff, eco] = differenceSplit(filterData, vrp, targetDate);
+[diff1, eco1] = differenceSplit(filterData1, blackVol, targetDate1);
+[diff2, eco2] = differenceSplit(filterData2, blackVol, targetDate2);
 
-% select only essential measures that are of interest
-X = eco(:, {'SurvM', 'Actual', 'StdDev', 'Surprise', 'SurpriseZscore'});
-X = table2array(X);
+% compute the pre/post filter difference vector
+diff1Vector = mean(diff1, 2);
+diff2Vector = mean(diff2, 2);
 
-% remove periods where elements are 'inf' or 'nan'
-y = mean(diff(~any(isnan(X)|isinf(X),2)), 2);
-X = X(~any(isnan(X)|isinf(X),2), :);
+% perform regression on Z-scores to determine efficacy
+[bv1,~,R2v1,~,~,~,F1] = olsgmm(diff1Vector, eco1.SurpriseZscore, 0, 1);
+[bv2,~,R2v2,~,~,~,F2] = olsgmm(diff2Vector, eco2.SurpriseZscore, 0, 1);
 
-[n,p] = size(X);
+pd = fitdist(diff1Vector, 'Normal');         % fit normal distribution  
+ci = paramci(pd, 'Alpha', .01);              % 99% confidence interval 
 
-% compute the partial least squares regression, with 5 principal comps.
-[Xl,Yl,Xscores,Yscores,betaPLS,PLSPctVar] = plsregress(X,y,5);
-yfitPLS = [ones(n,1) X] * betaPLS;      % PLS reg. fit
+[bv3,~,R2v3,~,~,~,F3] = olsgmm(diff1Vector((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), eco1.SurpriseZscore((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), 0, 1);
 
-TSS = sum((y-mean(y)).^2);              % total sum of squares
-RSS_PLS = sum((y-yfitPLS).^2);          % sum of squared residuals
-rsquaredPLS = 1 - RSS_PLS/TSS;
+% compute a scatter histogram for the average change in vol measure
+subplot(1, 2, 1); hold on; 
+scatter(eco1.SurpriseZscore, diff1Vector, 'MarkerFaceColor', 'blue', ...
+    'MarkerEdgeColor', 'black', 'DisplayName', 'Raw Data'); 
+scatter(eco1.SurpriseZscore((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), diff1Vector((diff1Vector >= ci(1)) & ...
+    (diff1Vector <= ci(2))), 'MarkerFaceColor', 'red', ...
+    'MarkerEdgeColor', 'black', 'MarkerFaceAlpha',1, 'DisplayName', ...
+    'Normal-dist 99%'); 
 
-subplot(1,2,1)
-scatter(y, yfitPLS, 'Marker', 's', 'MarkerEdgeColor', 'black', ...
-    'MarkerFaceColor', 'red', 'DisplayName', 'PLSR with 5 princicpal components');
-xlabel('Observed Response');
-ylabel('Fitted Response');
-title(strcat("R-squared observed ", string(round(rsquaredPLS, 3))))
-legend('show', 'location','NW');
+plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv1, 'LineStyle', '--', ...
+    'color', 'blue', 'DisplayName', ...
+    strcat("\beta=", string(round(bv1, 3)), ", pValue=", ...
+    string(round(F1(3), 2))))
+plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv3, 'LineStyle', '--', ...
+    'color', 'red', 'DisplayName', ...
+    strcat("\beta=", string(round(bv3, 3)), ", pValue=", ...
+    string(round(F3(3), 2))))
 
-subplot(1,2,2)
-plot(1:5,100*cumsum(PLSPctVar(2,:)),'b-o');
-xlabel('Number of Principal Components');
-ylabel('Percent Variance Explained in Y');
-legend('PLSR', 'location','SE');
+xlabel(strcat("Economic Surprise Z-score"), 'fontsize', 9)
+ylabel(["Change in Implied Volatility", "Low Uncertainty"], 'fontsize', 9)
+legend('show')
 
-% export the image to Interest Bucket for VRP measures
-name = strcat("Output/MacroRegressions/PLSR.jpg");
-exportgraphics(fig, name);
+% ======================================================================
 
-% -----------------------------------------------------------------------
+pd = fitdist(diff2Vector, 'Normal');        % fit normal distribution  
+ci = paramci(pd, 'Alpha', .01);             % 99% confidence interval 
 
-fig = figure('visible', 'on');  
-set(gcf, 'Position', [100, 100, 950, 600]);
+[bv4,~,R2v4,~,~,~,F4] = olsgmm(diff2Vector((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), eco2.SurpriseZscore((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), 0, 1);
 
-hold on; 
-scatter(X(:, 3), yfitPLS, 'Marker', 'o', 'MarkerEdgeColor', 'black', ...
-    'MarkerFaceColor', 'yellow', 'DisplayName', 'PLSR Fit Points')
-xlabel(strcat("Standard Deviation for ", event, " Forecast"), ...
-    'fontsize', 9)
-ylabel("Change in Variance Risk Premium", 'fontsize', 9)
-xlim([-0.025, max(X(:, 3))+0.05])
-legend show
+subplot(1, 2, 2); hold on; 
+scatter(eco2.SurpriseZscore, diff2Vector, 'MarkerFaceColor', 'blue', ...
+    'MarkerEdgeColor', 'black', 'DisplayName', 'Raw Data')
+scatter(eco1.SurpriseZscore((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), diff2Vector((diff2Vector >= ci(1)) & ...
+    (diff2Vector <= ci(2))), 'MarkerFaceColor', 'red', ...
+    'MarkerEdgeColor', 'black', 'MarkerFaceAlpha',1, 'DisplayName', ...
+    'Normal-dist 99%');
 
-% export the image to Interest Bucket for VRP measures
-name = strcat("Output/MacroRegressions/PLSR_Scatter.jpg");
-exportgraphics(fig, name);
+plot(eco2.SurpriseZscore, eco2.SurpriseZscore*bv2, 'LineStyle', '--', ...
+    'color', 'blue', 'DisplayName', ...
+    strcat("\beta=", string(round(bv2, 3)), ", pValue=", ...
+    string(round(F2(3), 2))))
+plot(eco1.SurpriseZscore, eco1.SurpriseZscore*bv4, 'LineStyle', '--', ...
+    'color', 'red', 'DisplayName', ...
+    strcat("\beta=", string(round(bv4, 3)), ", pValue=", ...
+    string(round(F4(3), 2))))
 
-% -----------------------------------------------------------------------
-
-fig = figure('visible', 'off');  
-set(gcf, 'Position', [100, 100, 950, 600]);
-
-fullRegCoefs = fitlm(eco.StdDev, mean(diff, 2)).Coefficients;
-reducedRegCoefs = fitlm(X(:, 3), yfitPLS).Coefficients;
-regRange = 0:0.01:max(X(:, 3))+0.1;
-
-hold on; 
-scatter(X(:, 3), yfitPLS, 'Marker', 'o', 'MarkerEdgeColor', 'black', ...
-    'MarkerFaceColor', 'yellow', 'DisplayName', 'PLSR Fit Points')
-plot(regRange, reducedRegCoefs{2,1}*regRange+reducedRegCoefs{1, 1}, ...
-    'LineStyle', '--', 'LineWidth', 2, 'color', 'red', 'DisplayName', ...
-    'Regression on Fit Points')
-plot(regRange, fullRegCoefs{2,1}*regRange+fullRegCoefs{1, 1}, ...
-    'LineStyle', '--', 'LineWidth', 2, 'color', 'blue', 'DisplayName', ...
-    'Regression on All Points')
-
-scatter(eco.StdDev, mean(diff, 2), 'Marker', 'o', 'MarkerEdgeColor', ...
-    'black', 'DisplayName', 'Observed')
-xlabel(strcat("Standard Deviation for ", event, " Forecast"), ...
-    'fontsize', 9)
-ylabel("Change in Variance Risk Premium", 'fontsize', 9)
-xlim([-0.025, max(X(:, 3))+0.05])
-legend show
+xlabel(strcat("Economic Surprise Z-score"), 'fontsize', 9)
+ylabel(["Change in Implied Volatility", "High Uncertainty"], 'fontsize', 9)
+legend('show')
 
 % export the image to Interest Bucket for VRP measures
-name = strcat("Output/MacroRegressions/PLSR_Fit_Regress.jpg");
+name = strcat("Output/MacroRegressions/ndistRegression.jpg");
 exportgraphics(fig, name);
 
-%% Construct term strucutre variant for pre/post annoucement window (VRP)
+%% Construct term structure variant (refer to TermStructure/ folder)
 
 % iterate through various volatility measures
-for index = 1:2
+for data = 1:2
     
     % volatility data being examined
-    data = volData(index);
-    data = data{:};
-    volName = volFolder(index);
+    vol = volData{data};
+    volName = volFolder(data);
     
     for event = keys
         fig = figure('visible', 'off');  
@@ -955,28 +539,26 @@ for index = 1:2
         eventName = ecoMap(name); period = 1;
 
         % filter economic dates according to interest rate regime 
-        filterLowEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-            lowIR{:, 'DateMod'}), :);
-        filterHighEco = ecoData(ismember(ecoData{:, 'DateMod'}, ...
-           highIR{:, 'DateMod'}), :);
+        filterLowEco = ecoData(ismember(ecoData{:, 1}, lowIR{:, 1}), :);
+        filterHighEco = ecoData(ismember(ecoData{:, 1}, highIR{:, 1}), :);
 
         % filter economic data according to appropriate event
         filterLowData=filterLowEco(strcmp(filterLowEco.Ticker,event), :);
         filterHighData=filterHighEco(strcmp(filterHighEco.Ticker,event),:);
 
         % match target dates according to the date prior examined
-        targetLowDate = matchingError(filterLowData, data, period);
-        targeHighDate = matchingError(filterHighData, data, period);
+        targetLowDate = matchingError(filterLowData, vol, period);
+        targeHighDate = matchingError(filterHighData, vol, period);
 
         % select dates of pre/post annoucment window for vol measures
-        afterLowAnnouce = data(ismember(data{:, 1}, ...
+        afterLowAnnouce = vol(ismember(vol{:, 1}, ...
             targetLowDate), :);
-        beforeLowAnnouce = data(ismember(data{:, 1}, ...
+        beforeLowAnnouce = vol(ismember(vol{:, 1}, ...
             targetLowDate-period), :);
 
-        afterHighAnnouce = data(ismember(data{:, 1}, ...
+        afterHighAnnouce = vol(ismember(vol{:, 1}, ...
             targeHighDate), :);
-        beforeHighAnnouce = data(ismember(data{:, 1}, ...
+        beforeHighAnnouce = vol(ismember(vol{:, 1}, ...
             targeHighDate-period), :);
 
         % reshape for easy plotting in environment
@@ -990,6 +572,7 @@ for index = 1:2
         % low interest rate enviornment
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         subplot(1,2,1); hold on;
+        
         plot(afterLowValues(:, 1), 'LineStyle', '--', 'color', 'red', ...
             'Marker', 'd', 'MarkerFaceColor','red', 'MarkerEdgeColor', ...
             'black', 'DisplayName', '2y (post Ann.)');
@@ -1055,193 +638,263 @@ for index = 1:2
     
 end
 
-%% Function for Peforming Regressions on Macro Variables
+%% PCA on volatility measures for all 12 swaptions, regression 
 
-function targetDates = matchingError(base, target, window)
-%   Finds the intersection between both macro economic fields and the 
-%   implied volatility/varaince risk premia levels provided
-%   -------
-%   :param: base   -> type table
-%       Economic annoucments that track a particular event
-%   :param: target -> type table
-%       Target variable measure to track against economic event
-%   :param: window -> type int
-%       The number of periods to lookback, e.g. 1 = 1-day
+outDirectory = 'Output/MacroRegressions/Regressions/full';
 
-   % annoucement data for economic measurements 
-   annoucements = base{:, 1};
+% iterate through each volatility data {vrp, blackVol, SigA}
+for data = 1:3
+    
+    % compute the principal component analysis 
+    vol = volData{data};
+    [~, diff1Vector, ~, ~, explained] = pca(vol{:, 2:end}, ...
+        'NumComponents', 1);
+    fprintf('1st principal component explains %.4d of variance\n', ...
+        explained(1))
+    
+    % form table with data vector and PCA 1st component 
+    volMeasure = table(vol{:, 1}, diff1Vector, 'VariableNames', ...
+        {'Date', '1stPC'});
+    
+    % perform regression on bucket economic releases
+    regTB = regression(ecoData, volMeasure, regressVar, ecoMap);
+    name = strcat(outDirectory, '/', volFolder{data}, '/', ...
+        '/regressPCACoefs.csv');
+    
+    % write regression coeffcients to table
+    writetable(regTB, name);
 
-   % daily changes +/- day from release of annoucnemnt 
-   % annoucement date EOD price - day prior EOD price
-   post = target(ismember(target{:, 1}, annoucements), :);
-   pre = target(ismember(target{:, 1}, annoucements-window), :);
-   
-   % find the intersection between date ranges
-   targetDates = intersect(post{:, 1}, pre{:, 1}+window);
 end
 
+%% PCA on implied volatility for all 12 swaptions across uncertainity
 
-function [diff, eco] = differenceSplit(base, target, targetDate)
-%   Computing the volatility difference between pre/post annoucements
-%   as well as the filtered economic data 
-%   -------
-%   :param: base       -> type table
-%       Economic annoucments that track a particular event
-%   :param: target     -> type table
-%       Target variable measure to track against economic event
-%   :param: targetDate -> type datetime array
-%       Intersecting dates for variables vectors 
+outDirectory = 'Output/MacroRegressions/Regressions/full';
 
-    % change in regressed values pre-post announcement 
-    post = target(ismember(target{:, 1}, targetDate), :);
-    pre = target(ismember(target{:, 1}, targetDate-1), :);
+[~, diff1Vector, ~, ~, ~] = pca(blackVol{:, 2:end}, 'NumComponents', 1);
     
-    % compute the volatility measure difference
-    diff = post{:, 2:end} - pre{:, 2:end};      
+% form table with data vector and PCA 1st component 
+volMeasure = table(blackVol{:, 1}, diff1Vector, 'VariableNames', ...
+    {'Date', '1stPC'});
 
-    % economic filtered data matching for y date time 
-    eco = base(ismember(targetDate, base{:, 1}), :);
-end
+% perform regression on bucket economic releases
+regTB1 = regression(ecoSTD25, volMeasure, regressVar, ecoMap);
+regTB2 = regression(ecoSTD75, volMeasure, regressVar, ecoMap);
+
+name1 = strcat(outDirectory, '/iv/regressPCACoefs25bucket.csv');
+name2 = strcat(outDirectory, '/iv/regressPCACoefs75bucket.csv');
+
+% write regression coeffcients to table
+writetable(regTB1, name1);
+writetable(regTB2, name2);
 
 
-function tb = regression(X, y, col, map)
-%   Peforms a regression on varaibles X, y. Where X is a table of economic  
-%   data releases provided by Bloomberg and y is the measured target. 
-%   These targets include our measure for Variance Risk premia, implied
-%   volatility and realized volatiltity 
-%   -------
-%   :param: X   -> type table 
-%       The economic surprises from Bloomberg to regress on 
-%   :param: y   -> type table 
-%       The volatility measures (include IV, RV and VRP)
-%   :param: col -> type str 
-%       The column from the economic surprises, to regress on 
-%       e.g. "SurpriseZscore" 
+%% PCA on implied volatility for all swaptions across uncertainity and rate regime
 
-    % all availabe macro events
-    keys = unique(X{:, 'Ticker'})';
+outDirectory = 'Output/MacroRegressions/Regressions/full';
+
+[~, diff1Vector, ~, ~, ~] = pca(blackVol{:, 2:end}, 'NumComponents', 1);
     
-    [~, n] = size(y.Properties.VariableNames);
-    [~, k] = size(keys);
-    
-    % initialize the columns that will be exported for regressed figures
-    Coefs = zeros((n-1)*k, 1);
-    StdErr = zeros((n-1)*k, 1);
-    pValue = zeros((n-1)*k, 1);
-    tStat = zeros((n-1)*k, 1);
-    R2 = zeros((n-1)*k, 1);
-    adjR2 = zeros((n-1)*k, 1);
-    Event = cell((n-1)*k, 1);
-    Security = cell((n-1)*k, 1);
-    RegressVar = cell((n-1)*k, 1);
-   
-    % used to iterate through rows building table
-    rows = 1;
-    
-    % iterate through each implied volatility measure (3 tenors, 4 terms) 
-    for index = 1:n-1
-        names = y.Properties.VariableNames{index+1};
-        fprintf('Measure for %s swaption\n', names);
+% form table with data vector and PCA 1st component 
+volMeasure = table(blackVol{:, 1}, diff1Vector, 'VariableNames', ...
+    {'Date', '1stPC'});
 
-        % iterate through each of the key annoucement events
-        for i = keys
+% filter economic dates according to interest rate regime 
+filterEco1 = ecoSTD25(ismember(ecoSTD25{:, 1}, highIR{:, 1}), :);
+filterEco2 = ecoSTD75(ismember(ecoSTD75{:, 1}, lowIR{:, 1}), :);
 
-               % filter out for particular economic data
-               filterData = X(ismember(X{:, 'Ticker'}, i), :);
-               
-               % checking runtime of regressed values
-               event = filterData{1, 'Event'}; 
-               fprintf('\tRegressing on %s\n', event{:});
-               
-               % find the intersection between date ranges
-               targetDates = matchingError(filterData, y, 1);
-               
-               % computes difference and economic surprise
-               [diff, eco] = differenceSplit(filterData, y, targetDates);
-               
-               % perform linear regression with significance
-               [est,sd_err,R2v,R2vadj,~,~,F] = olsgmm(diff(:, index), ...
-                   eco{:, col}, 0, 1);
-               
-               % assigning the correct statistic to corresponding column 
-               Coefs(rows, 1) = est;
-               StdErr(rows, 1) = sd_err;
-               pValue(rows, 1) = F(3);
-               tStat(rows, 1) = est/sd_err;
-               R2(rows, 1) = R2v;
-               adjR2(rows, 1) = R2vadj;
-               Event(rows, 1) = {map(i{:})};
-               Security(rows, 1) = {names};
-               RegressVar(rows, 1) = {col};
-               
-               % iteratively moving down the rows
-               rows = rows + 1;
-        end
-        
-    end
-    
-    tb = table(Coefs, StdErr, pValue, tStat, R2, adjR2, Event, ...
-        Security, RegressVar);
-end
+% perform regression on bucket economic releases
+regTB1 = regression(filterEco1, volMeasure, regressVar, ecoMap);
+regTB2 = regression(filterEco2, volMeasure, regressVar, ecoMap);
 
+name1 = strcat(outDirectory, '/iv/regressPCACoefs25bucketHigh.csv');
+name2 = strcat(outDirectory, '/iv/regressPCACoefs75bucketLow.csv');
 
-function termStructure(tb, folder, keys, econVars, titleName)
-%   Plots the term structure of p-Values for volatility measures regressed
-%   on economic surprises for a given security tier
-%   -------
-%   :param: tb       -> type table
-%   :param: fileName -> type str (double qoutes "..")
-%   :param: keys     -> type cell array
-%   :param: econVars -> type cell array
+% write regression coeffcients to table
+writetable(regTB1, name1);
+writetable(regTB2, name2);
+
+% ###################################################################
+% fig = figure('visible', 'on');                 
+% set(gcf, 'Position', [100, 100, 1500, 600]);
+% 
+% x1 = filterEco1(ismember(filterEco1.Event, 'Initial Jobless Claims'), :);
+% x2 = filterEco2(ismember(filterEco2.Event, 'Initial Jobless Claims'), :);
+% 
+% % find the intersection between date ranges
+% targetDates1 = matchingError(x1, volMeasure, 1);
+% targetDates2 = matchingError(x2, volMeasure, 1);
+% 
+% % computes difference and economic surprise
+% [diff1, eco1] = differenceSplit(x1, volMeasure, targetDates1);
+% [diff2, eco2] = differenceSplit(x2, volMeasure, targetDates2);
+% 
+% % perform linear regression with significance
+% [est1,~,~,~,~,~,F1] = olsgmm(diff1(:, 1), eco1{:, 'SurpriseZscore'}, 0, 1);
+% [est2,~,~,~,~,~,F2] = olsgmm(diff2(:, 1), eco2{:, 'SurpriseZscore'}, 0, 1);
+% 
+% subplot(1, 2, 1); hold on
+% scatter(eco1.SurpriseZscore, diff1, 'DisplayName', 'Raw Data', ...
+%     'MarkerFaceColor', 'blue', 'MarkerEdgeColor', 'black')
+% plot(eco1.SurpriseZscore, eco1.SurpriseZscore*est1, 'LineStyle', '-', ...
+%     'LineWidth', 1, 'color', 'red', 'DisplayName', '\beta_0+\beta_1Z_{0.25}^{high}+\epsilon')
+% ylabel('Change in Implied Volatility (1st PC)', 'fontsize', 10)
+% xlabel('Intial jobless claims Surprise Z-score low uncertainty', 'fontsize', 8)
+% title('High interest rate environment')
+% legend show
+% 
+% subplot(1, 2, 2); hold on
+% scatter(eco2.SurpriseZscore, diff2, 'DisplayName', 'Raw Data', ...
+%     'MarkerFaceColor', 'blue', 'MarkerEdgeColor', 'black')
+% plot(eco2.SurpriseZscore, eco2.SurpriseZscore*est2, 'LineStyle', '-', ...
+%     'LineWidth', 1, 'color', 'red', 'DisplayName', '\beta_0+\beta_1Z_{0.75}^{low}+\epsilon')
+% xlabel('Intial jobless claims Surprise Z-score high uncertainty', 'fontsize', 8)
+% title('Low interest rate environment')
+% legend show
+% 
+% exportgraphics(fig, 'Output/MacroRegressions/Regressions/full/image.jpg');
+
+%% PCA on volatility measures for all 4 swaption tenors 
+
+outDirectory = 'Output/MacroRegressions/Regressions/full';
+
+% perform regression on bucket economic releases
+regTB = regression(ecoData, impvolTenorReduced, regressVar, ecoMap);
+name = strcat(outDirectory, '/iv/regressTenorPCACoefs.csv');
+
+% write regression coeffcients to table
+writetable(regTB, name);
+
+%% PCA on volatility measures for all 4 swaption tenors by uncertainty
+
+outDirectory = 'Output/MacroRegressions/Regressions/full';
+
+% perform regression on bucket economic releases
+regTB1 = regression(ecoSTD25, impvolTenorReduced, regressVar, ecoMap);
+regTB2 = regression(ecoSTD75, impvolTenorReduced, regressVar, ecoMap);
+
+% perform regression on bucket economic releases
+name1 = strcat(outDirectory, '/iv/regressTenorPCACoefs25bucket.csv');
+name2 = strcat(outDirectory, '/iv/regressTenorPCACoefs75bucket.csv');
+
+% write regression coeffcients to table
+writetable(regTB1, name1);
+writetable(regTB2, name2);
+
+%% PCA on volatility measures for all 3 swaption terms 
+
+outDirectory = 'Output/MacroRegressions/Regressions/full';
+
+% perform regression on bucket economic releases
+regTB = regression(ecoData, impvolTermReduced, regressVar, ecoMap);
+name = strcat(outDirectory, '/iv/regressTermPCACoefs.csv');
+
+% write regression coeffcients to table
+writetable(regTB, name);
+
+%% PCA on volatility measures for all 3 swaption terms by uncertainty
+
+outDirectory = 'Output/MacroRegressions/Regressions/full';
+
+% perform regression on bucket economic releases
+regTB1 = regression(ecoSTD25, impvolTermReduced, regressVar, ecoMap);
+regTB2 = regression(ecoSTD75, impvolTermReduced, regressVar, ecoMap);
+
+name1 = strcat(outDirectory, '/iv/regressTermPCACoefs25bucket.csv');
+name2 = strcat(outDirectory, '/iv/regressTermPCACoefs75bucket.csv');
+
+% write regression coeffcients to table
+writetable(regTB1, name1);
+writetable(regTB2, name2);
+
+%% PCA plot of marco surprises across rate regime and STD bucket 
+
+% itterate through each volatility data set (vrp, iv, rv)
+for data = 1:3
     
-    % refer to corrext directory to store images
-    directory = strcat('Output/MacroRegressions/', folder, '/');
-    
-    % determing the swaption risk buckets by tenor
-    tier1 = {'USSV0C2Curncy', 'USSV0F2Curncy', 'USSV012Curncy', ...
-        'USSV022Curncy'};
-    tier2 = {'USSV0C5Curncy', 'USSV0F5Curncy', 'USSV015Curncy', ...
-        'USSV025Curncy'};
-    tier3 = {'USSV0C10Curncy', 'USSV0F10Curncy', 'USSV0110Curncy', ...
-        'USSV0210Curncy'};
-    
-    % iterate through each event
+    % itterate through economic events (e.g. FOMC Rate Decision)
     for i = 1:10
-        % macro-variable event 
-        event = keys(i);
         
-        fig = figure('visible', 'off');
-        set(gcf, 'Position', [100, 100, 900, 700]);
-        
-        % vrp regression filtered by security and event
-        x2y = tb(ismember(tb{:, 'Security'}, tier1) ...
-            & ismember(tb{:, 'Event'}, event), :);
-        x5y = tb(ismember(tb{:, 'Security'}, tier2) ...
-            & ismember(tb{:, 'Event'}, event), :);
-        x10y = tb(ismember(tb{:, 'Security'}, tier3) ...
-            & ismember(tb{:, 'Event'}, event), :);
+        fig = figure('visible', 'off');                 
+        set(gcf, 'Position', [100, 100, 1500, 600]);   
 
-        % construct the new modified subplots
-        hold on;
-        plot(x2y{:, 'Estimate'}, 'DisplayName', '2y Tenor', 'color', ...
-            'red', 'Marker', 'o');
-        plot(x5y{:, 'Estimate'}, 'DisplayName', '5y Tenor', 'color', ...
-            'green', 'Marker', '+');
-        plot(x10y{:, 'Estimate'}, 'DisplayName', '10y Tenor', 'color', ...
-            'blue', 'Marker', 'x');
-        xticks([1, 2, 3, 4]); xticklabels({'3m', '6m', '1y', '2y'});
-        xlabel('Terms');
-        ylabel(strcat("Regression Coefficient for ", econVars(i)), ...
-            'FontSize', 8);
-        title(titleName);
+        event = keys(i);    % economic event  
 
-        % show the legend for the underlying series
-        lgd = legend(); lgd.FontSize = 7;   
-        hold off; 
+        for index = 1:2
+            % selects the interest rate environment 
+            df = irEnv{:, index};
+
+            % filter economic dates according to interest rate regime 
+            filterEco = ecoData(ismember(ecoData{:, 1}, df{:, 1}), :);
+
+            % filter data by macro economic event
+            filterData = filterEco(ismember(filterEco{:, 'Ticker'}, ...
+                event), :);
+
+            % compute the top and bottom forecast STD percentile per event
+            bottom10 = quantile(filterData.StdDev, .10);
+            bottom25 = quantile(filterData.StdDev, .25);
+            top25 = quantile(filterData.StdDev, .75);
+            top10 = quantile(filterData.StdDev, .90);
+
+            % bucket out economic figures according to std value
+            ecoBin1 = filterData((filterData.StdDev <= bottom10), :);
+            ecoBin2 = filterData((filterData.StdDev <= bottom25), :);
+            ecoBin3 = filterData((filterData.StdDev >= top25), :);
+            ecoBin4 = filterData((filterData.StdDev >= top10), :);
+            
+            volSelection = volData{data};
+            
+            % compute the principal component analysis 
+            [~, component, ~, ~, ~] = pca(volSelection{:, 2:end}, ...
+                'NumComponents', 1);
+
+            % form table with data vector and PCA 1st component 
+            volMeasure = table(volSelection{:, 1}, component, ...
+                'VariableNames', {'Date', '1stPC'});
+            
+            % match target dates for each STD period 
+            datesBin1 = matchingError(ecoBin1, volMeasure, 1);
+            datesBin2 = matchingError(ecoBin2, volMeasure, 1);
+            datesBin3 = matchingError(ecoBin3, volMeasure, 1);
+            datesBin4 = matchingError(ecoBin4, volMeasure, 1);
+
+            % change in regressed values pre-post announcement 
+            [diffBin1, ~] = differenceSplit(ecoBin1, volMeasure, ...
+                datesBin1);
+            [diffBin2, ~] = differenceSplit(ecoBin2, volMeasure, ...
+                datesBin2);
+            [diffBin3, ~] = differenceSplit(ecoBin3, volMeasure, ...
+                datesBin3);
+            [diffBin4, ~] = differenceSplit(ecoBin4, volMeasure, ...
+                datesBin4);
+
+            % building out the average difference cell per STD period
+            % function computes the mean, column wise (per each security) 
+            y = [mean(diffBin1, 'omitnan'), mean(diffBin2, 'omitnan'), ...
+                mean(diffBin3, 'omitnan'), mean(diffBin4, 'omitnan')];
+
+            % plotting out the bucket changes by positive/negative leaning
+            subplot(1, 2, index);
+            bar(1:4, y); title(strcat(rateNames(index), ...
+                ' Rate Environment'));
+            xticks([1, 2, 3, 4]); 
+            xticklabels({'10th', '25th', '75th', '90th'});
+            ylim([min(y)-0.5, max(y)+0.5])
+            xlabel({string(econVars(i)), ...
+                'Forecast Standard Deviation Percentile'}, 'FontSize', 8);
+        end
+
+        subplot(1, 2, 1);
+        ylabel("Average Change to Macro-surprise", 'FontSize', 9);
+        legend('show', strcat("1st Principal Component in ", ...
+            volNames{data}), 'location', 'best')
         
-        exportName = strcat(directory, event, '.jpg');
-        exportgraphics(fig, exportName);
+        % export the image to Interest Bucket for VRP measures
+        name = strcat("Output/MacroRegressions/StdBuckets/", ...
+            volFolder{data}, "/", event, ".jpg");
+        exportgraphics(fig, name);
+
     end
-
+  
 end
 

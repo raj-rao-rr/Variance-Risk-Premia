@@ -16,7 +16,7 @@ termsID = ["3M", "6M", "1Y", "2Y"];
 
 %% (Figure 1) Swaption Implied Volatilities 
 
-fig = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 950, 650]);    % setting figure dimensions
 
 left_color = [0 0 0];           % RGB for black
@@ -59,10 +59,12 @@ fprintf('Swaption volatility graph was created.\n');
 
 %% (Figure 2) Cross Section of Swaption Implied Volatilities
 
+% This figure plots the cross-section of Swaption implied volatilities for 
+% tenors of 1, 2, 3, 4, 5 and 10 years and terms of 6, 12, 60, 120 months
 
 %% (Figure 13) Swaption Implied Vol vs. VIX
 
-fig = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');               % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 950, 650]);   % setting figure dimensions
 
 for i = 1:4
@@ -100,6 +102,8 @@ fprintf('VIX comparison graphs were created.\n');
 
 %% (Figure 7) Swaption Implied Vol Structural Breaks 
 
-% Structural break points (in black dashed vertical lines),
-% determined by the methods developed in (Bai and Perron, 1998).
+% The figure plots the Swaption implied volatility and variance risk 
+% premia, with tenor 1 year and term 6 months, along with structural 
+% break points (in grey dashed vertical lines), determined by the methods 
+% developed in (Bai and Perron, 1998) - code under ben_perron.
 

@@ -26,11 +26,11 @@ end
 %        https://www.mathworks.com/help/econ/garch.html
 %-------------------------------------------------------------
 
-% Garch(1,1) model with p=1 and q=1                                         (eGARCH suffers cond. var positivity error)
+% initialize a Garch(1,1) model with p=1 and q=1                            (eGARCH suffers cond. var positivity error)
 model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', ...
     'Gaussian', 'Offset', NaN); 
-% model = arima('AR', NaN, 'Distribution', 'Gaussian', 'Variance', ...
-%     garch(1,1));
+
+% set the options for forecast model optimization
 options = optimoptions(@fmincon, 'Display' , 'off', 'Diagnostics', ...
     'off', 'Algorithm', 'sqp', 'TolCon', 1e-7);
 
@@ -42,11 +42,10 @@ mm = m1*21;                        % re-index for trading days
 
 rollWindow = 2654;                 % train first 2137 sample data 
 
-%-------------------------------------------------------------
-SigmaF = zeros(T-rollWindow-1,12);  % initialize the size of the matrix 
+% initialize the size of the matrix for min, max and median estimates
+SigmaF = zeros(T-rollWindow-1,12);  
 SminF  = zeros(T-rollWindow-1,12); 
 SmaxF  = zeros(T-rollWindow-1,12); 
-%-------------------------------------------------------------
 
 %% Monte Carlo Simulator (Volatility Model)
 
@@ -54,13 +53,14 @@ tic     % time convention
 for t = 1:T-rollWindow-1                   
     propIndex = 1;           % index for tracking column position 
     
-    for i = [1, 2, 3]        % index position of the 2y; 5y; 10y swap tenor
+    for i = [1, 2, 3]        % index position of the 2y, 5y, 10y tenor
         
         % presample innovations (returns matrix)
         r = returns(1:t+rollWindow, i);
         
         % fitting the conditional variance model GARCH to data 
-        EstMdl = estimate(model, r, 'options', options, 'Display', 'off');  % surpress display of outputs for fit
+        % we surpress the display of outputs for each fit
+        EstMdl = estimate(model, r, 'options', options, 'Display', 'off');  
         
         % infer conditional variances from corresponding models
         v0 = infer(EstMdl, r);
@@ -83,7 +83,7 @@ for t = 1:T-rollWindow-1
         %-----------------------------------------------------
         
         % iterate through the swap terms by modifying the index
-        for j=1:4        % mm = [63 126 252 504]       l  
+        for j=1:4        % mm = [63 126 252 504]         
             SigmaF(t,propIndex) = mean(SS(1:mm(j)));                        % assign by tenor then term                                             
             SminF(t,propIndex)  = mean(Smin(1:mm(j)));                      %    e.g. 2y3m, 2y6m, ...
             SmaxF(t,propIndex)  = mean(Smax(1:mm(j)));
@@ -97,7 +97,9 @@ for t = 1:T-rollWindow-1
         fprintf('t value is %d ...\n', t);
         toc
     end
+    
 end
+
 % approx. 4.5 hours in runtime for 10000 sims
 % approx. 15 minutes in runtime for 100 sims
 
@@ -110,7 +112,11 @@ UB   = SmaxF*sqrt(252)*100;
 %--------------------------------------
 
 % new table names and dates for the forecasted region 
-newNames = tableNames(); newDates = swapData{rollWindow+2:end, 1};
+newNames = ["USSV0C2Curncy", "USSV0F2Curncy", "USSV012Curncy",...
+    "USSV022Curncy", "USSV0C5Curncy", "USSV0F5Curncy", "USSV015Curncy",...
+    "USSV025Curncy", "USSV0C10Curncy", "USSV0F10Curncy", "USSV0110Curncy",...
+    "USSV0210Curncy"];
+newDates = swapData{rollWindow+2:end, 1};
 
 % Modifying matrix to table data structure
 SigmaFA = array2table(SigmaF, 'VariableNames', newNames);
@@ -123,7 +129,7 @@ LB = array2table(LB, 'VariableNames', newNames);
 UB = array2table(UB, 'VariableNames', newNames);
 SigA.date = newDates; LB.date = newDates; UB.date = newDates;
 
-% reordering the date column and brining it to the top
+% reordering the date column and bringing it to the top
 SigmaFA = [SigmaFA(:, end), SigmaFA(:, 1:end-1)];
 LBFA = [LBFA(:, end), LBFA(:, 1:end-1)];
 UBFA = [UBFA(:, end), UBFA(:, 1:end-1)];
@@ -137,28 +143,3 @@ fprintf('Daily vol file has been created.\n');
 
 save('Temp/SigA.mat','SigA','LB','UB');
 fprintf('Annualized vol file has been created.\n');
-
-writetable(LB, 'Temp/pythonTemps/volEstimates/LB.csv')
-writetable(UB, 'Temp/pythonTemps/volEstimates/UB.csv')
-writetable(SigA, 'Temp/pythonTemps/volEstimates/SigA.csv')
-
-%%
-
-function array = tableNames()
-%   Provides table names for security names     
-%   Function accepts no parameter
-
-    tenors = ["2", "5", "10"];              % tenors 2y; 5y; 10y
-    terms  = ["0C", "0F", "01", "02"];      % terms 3m; 6m; 1y; 2y
-
-    index = 1; 
-    array = ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"];   % declare memory for string array
-    
-    for i = 1:length(tenors)
-        for j = 1:length(terms)
-            name = strcat("USSV", terms(j), tenors(i), "Curncy");           % creating the Bloomberg name ref
-            array(index) = name; 
-            index = index + 1;                                              % increment the index for name array
-        end
-    end
-end

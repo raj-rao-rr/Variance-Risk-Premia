@@ -25,10 +25,6 @@ termsID = ["3M", "6M", "1Y", "2Y"];
 % security names for swaps 2y-10y
 names = vrp.Properties.VariableNames(2:end-1);
 
-% create a date modification for month,year identifier
-dateMod = string(month(vrp{:, 1})) + string(year(vrp{:, 1}));
-vrp.DateMod = dateMod;
-
 %% (Figure 3) Swaption Implied Vol vs. Forecasted Real Vol 
 
 % check to see if the directory exists, if not create it
@@ -192,8 +188,11 @@ fig = figure('visible', 'off');                % prevent display to MATLAB
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 subplot(3, 1, 1);
-lowVRP = vrp(ismember(vrp{:, 'DateMod'}, lowIR{:, 'DateMod'}), :);
-Y = reshape(mean(lowVRP{:, 2:end-1}), 4, 3)';     % plotting values
+
+% filter VRP figures according to interest rate regime and reshape matrix
+lowVRP = vrp(ismember(vrp{:, 1}, lowIR{:, 1}), :);
+Y = reshape(mean(lowVRP{:, 2:end}), 4, 3)';     
+
 hold on;
 plot(Y(:,1), '-.', 'DisplayName', '3m', 'color', 'blue', 'marker', 's');
 plot(Y(:,2), '-.','DisplayName', '6m', 'color', 'red', 'marker', 'o');
@@ -205,8 +204,11 @@ title('High Interest Subsample');
 legend('location', 'best');
 
 subplot(3, 1, 2);
-highVRP = vrp(ismember(vrp{:, 'DateMod'}, highIR{:, 'DateMod'}), :);
-Y = reshape(mean(highVRP{:, 2:end-1}), 4, 3)';     % plotting values
+
+% filter VRP figures according to interest rate regime and reshape matrix
+highVRP = vrp(ismember(vrp{:, 1}, highIR{:, 1}), :);
+Y = reshape(mean(highVRP{:, 2:end}), 4, 3)';     
+
 hold on;
 plot(Y(:,1), '-.', 'DisplayName', '3m', 'color', 'blue', 'marker', 's');
 plot(Y(:,2), '-.','DisplayName', '6m', 'color', 'red', 'marker', 'o');
@@ -218,7 +220,8 @@ title('Low Interest Subsample');
 legend('location', 'best');
 
 subplot(3, 1, 3);
-Y = reshape(mean(vrp{:, 2:end-1}), 4, 3)';        % plotting values
+
+Y = reshape(mean(vrp{:, 2:end}), 4, 3)';        
 hold on;
 plot(Y(:,1), '-.', 'DisplayName', '3m', 'color', 'blue', 'marker', 's');
 plot(Y(:,2), '-.','DisplayName', '6m', 'color', 'red', 'marker', 'o');
@@ -238,8 +241,8 @@ fig = figure('visible', 'off');                % prevent display to MATLAB
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 subplot(3, 1, 1);
-lowVRP = vrp(ismember(vrp{:, 'DateMod'}, lowIR{:, 'DateMod'}), :);
-Y = reshape(mean(lowVRP{:, 2:end-1}), 4, 3);     % plotting values
+lowVRP = vrp(ismember(vrp{:, 1}, lowIR{:, 1}), :);
+Y = reshape(mean(lowVRP{:, 2:end}), 4, 3);     % plotting values
 hold on;
 plot(Y(:,1), '-.', 'DisplayName', '2y', 'color', 'blue', 'marker', 's');
 plot(Y(:,2), '-.','DisplayName', '5y', 'color', 'red', 'marker', 'o');
@@ -250,8 +253,8 @@ title('High Interest Subsample');
 legend();
 
 subplot(3, 1, 2);
-highVRP = vrp(ismember(vrp{:, 'DateMod'}, highIR{:, 'DateMod'}), :);
-Y = reshape(mean(highVRP{:, 2:end-1}), 4, 3);     % plotting values
+highVRP = vrp(ismember(vrp{:, 1}, highIR{:, 1}), :);
+Y = reshape(mean(highVRP{:, 2:end}), 4, 3);     % plotting values
 hold on;
 plot(Y(:,1), '-.', 'DisplayName', '2y', 'color', 'blue', 'marker', 's');
 plot(Y(:,2), '-.','DisplayName', '5y', 'color', 'red', 'marker', 'o');
@@ -262,7 +265,7 @@ title('Low Interest Subsample');
 legend();
 
 subplot(3, 1, 3);
-Y = reshape(mean(vrp{:, 2:end-1}), 4, 3);         % plotting values
+Y = reshape(mean(vrp{:, 2:end}), 4, 3);         % plotting values
 hold on;
 plot(Y(:,1), '-.', 'DisplayName', '2y', 'color', 'blue', 'marker', 's');
 plot(Y(:,2), '-.','DisplayName', '5y', 'color', 'red', 'marker', 'o');
