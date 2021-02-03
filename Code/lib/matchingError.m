@@ -14,6 +14,12 @@
 %   :param: window (type int)
 %       The number of periods to lookback, e.g. 1 = 1-day
 % 
+% Outputs:
+%   :param: targetDates (type datetime)
+%       A datetime vector representing the intersection of shared dates
+%       between both two tables (base = economic varialbe) and (target =
+%       regressed variable)
+% 
 
 function targetDates = matchingError(base, target, window)
 
@@ -21,12 +27,12 @@ function targetDates = matchingError(base, target, window)
    % NOTE: This should always be the first column of the economic table
    annoucements = base{:, 1};
 
-   % daily changes +/- day from release of annoucnemnt 
+   % daily changes +/- day from release of annoucement 
    % annoucement date EOD price - day prior EOD price
    post = target(ismember(target{:, 1}, annoucements), :);
    pre = target(ismember(target{:, 1}, annoucements-window), :);
-   
-   % find the intersection between date ranges
+
+   % find the intersection between date ranges for pre-post annoucement
    targetDates = intersect(post{:, 1}, pre{:, 1}+window);
    
 end

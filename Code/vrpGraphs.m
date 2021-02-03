@@ -5,8 +5,7 @@ clear;
 load INIT root_dir
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol normalVol treasuryData vixData swapData fedfunds ...
-    lowIR highIR
+load DATA blackVol yeildCurve vix swapData fedfunds lowIR highIR
 
 % loading in temp file for GARCH forecasts
 load SigA SigA LB UB
@@ -26,11 +25,6 @@ termsID = ["3M", "6M", "1Y", "2Y"];
 names = vrp.Properties.VariableNames(2:end-1);
 
 %% (Figure 3) Swaption Implied Vol vs. Forecasted Real Vol 
-
-% check to see if the directory exists, if not create it
-if ~exist('Output/garchForecasts/', 'dir')
-    mkdir Output/garchForecasts/                                         
-end
 
 % incrementing across each tenor (e.g. 2y, 5y)
 for i = 1:3
@@ -75,12 +69,11 @@ for i = 1:3
         hold off; legend(h(2:end), 'Location', 'northwest');                % specify the legend displays
     end
     
-    outputFileName = strcat("Output/garchForecasts/Tenor", ...             % the name of the output file 
+    outputFileName = strcat("Output/garch-forecasts/Tenor", ...             % the name of the output file 
             tenors(i), "y.png"); 
     exportgraphics(fig, outputFileName);
 end
 
-addpath([root_dir filesep 'Output' filesep 'garchForecasts'])               % add the paths of GARCH forecast graphs
 fprintf('GARCH graphs were created.\n');
 
 %% (Figure 4) Variance Risk Premia 
@@ -125,11 +118,6 @@ fprintf('Variance Risk Premia graph was created.\n');
 
 %% (Figure 5) Autocorrelation Function for Variance Risk Premia 
 
-% check to see if the directory exists, if not create it
-if ~exist('Output/Autocorrelations/', 'dir')
-    mkdir Output/Autocorrelations/                                         
-end
-
 for n = 1:length(names)
     fig = figure('visible', 'off');                
     set(gcf, 'Position', [100, 100, 1050, 850]);   
@@ -137,13 +125,12 @@ for n = 1:length(names)
     % plotting the autocorrelation of each VRP measure 
     autocorr(vrp{:, names(n)}, 'NumLags', 50);  
     
-    outputFileName = strcat("Output/Autocorrelations/", ...
+    outputFileName = strcat("Output/autocorrelations/", ...
         names(n), ".jpg");                                                  % the name of the output file 
           
     exportgraphics(fig, outputFileName);
 end
 
-addpath([root_dir filesep 'Output' filesep 'Autocorrelations'])             % add the paths of autocorrelation folder
 fprintf('Autocorrelation graphs were created.\n');
 
 %% (Figure 6) Swaption Variance Risk Premia vs VIX 
@@ -172,8 +159,7 @@ for i = 1:3
         strcat("10y,", termsID(i)), 'color', 'green');
 
     % plot the VIX measure
-    plot(vixData{:, 1}, vixData{:, 2}, ...                                  % selecting date range to match IV measures
-        'DisplayName', 'VIX Index', 'color', 'black');
+    plot(vix{:, 1}, vix{:, 2}, 'DisplayName', 'VIX Index', 'color', 'black');
     
     legend('show', 'location', 'southwest', 'fontsize', 7);
     hold off; 

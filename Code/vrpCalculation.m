@@ -3,10 +3,11 @@
 clear; 
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol normalVol
+load DATA blackVol
 
 % loading in temp file for GARCh forecasts
 load SigA SigA LB UB
+
 
 %% Common global variables
 
@@ -34,7 +35,7 @@ for T = 1:length(tenors)        % itterate through tenors 2y, 5y, 10y
         name = strcat("USSV", terms(t), tenors(T), "Curncy");               
         
         % compute VRP measure and assign to matrix
-        vrp(:, index) = estVol.(name) - impVol.(name);                      
+        vrp(:, index) = estVol{:, name} - impVol{:, name};                      
         index = index + 1; 
         
     end 

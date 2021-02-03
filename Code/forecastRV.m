@@ -34,7 +34,7 @@ model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', ...
 options = optimoptions(@fmincon, 'Display' , 'off', 'Diagnostics', ...
     'off', 'Algorithm', 'sqp', 'TolCon', 1e-7);
 
-nTrials = 10000;                   % number of independent random trials
+nTrials = 1000;                    % number of independent random trials
 horizon = 504;                     % VaR forecast horizon (# observations)
 
 m1 = [3, 6, 12, 24];               % swap terms 3m; 6m; 12m; 24m
@@ -85,7 +85,7 @@ for t = 1:T-rollWindow-1
         % iterate through the swap terms by modifying the index
         for j=1:4        % mm = [63 126 252 504]         
             SigmaF(t,propIndex) = mean(SS(1:mm(j)));                        % assign by tenor then term                                             
-            SminF(t,propIndex)  = mean(Smin(1:mm(j)));                      %    e.g. 2y3m, 2y6m, ...
+            SminF(t,propIndex)  = mean(Smin(1:mm(j)));                      %    e.g. 2y3m, 2y6m, 2y1y, 2y2y
             SmaxF(t,propIndex)  = mean(Smax(1:mm(j)));
             propIndex = propIndex + 1;                                      % increment the column index 
         end

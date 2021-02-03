@@ -21,12 +21,12 @@ inputDirectory = baseDirectory + '/Input/'
 tempDirectory = baseDirectory + '/Temp/'
 
 
-# %% Economic Data Annoucements 
+# %% Economic Data Numeric Conversion
 
 # reading in economic annoucements from Blommberg
-ecoAnnounce = pd.read_csv(inputDirectory + 'ECO_release.csv')
+ecoAnnounce = pd.read_csv(inputDirectory + 'ecoRelease.csv')
 
-def accountsFix(elm):
+def numericFix(elm):
     """
     Removes non-numeric characters from elements within reported data 
     :param: elm (str, int, float) 
@@ -51,15 +51,49 @@ def accountsFix(elm):
         return elm
 
 # fix the economic data points, extracting only numeric values
-ecoAnnounce['SurvM'] = ecoAnnounce['SurvM'].apply(accountsFix)
-ecoAnnounce['SurvA'] = ecoAnnounce['SurvA'].apply(accountsFix)
-ecoAnnounce['SurvH'] = ecoAnnounce['SurvH'].apply(accountsFix)
-ecoAnnounce['SurvL'] = ecoAnnounce['SurvL'].apply(accountsFix)
-ecoAnnounce['Actual'] = ecoAnnounce['Actual'].apply(accountsFix)
-ecoAnnounce['Prior'] = ecoAnnounce['Prior'].apply(accountsFix)
-ecoAnnounce['Revised'] = ecoAnnounce['Revised'].apply(accountsFix)
+ecoAnnounce['SurvM'] = ecoAnnounce['SurvM'].apply(numericFix)
+ecoAnnounce['SurvA'] = ecoAnnounce['SurvA'].apply(numericFix)
+ecoAnnounce['SurvH'] = ecoAnnounce['SurvH'].apply(numericFix)
+ecoAnnounce['SurvL'] = ecoAnnounce['SurvL'].apply(numericFix)
+ecoAnnounce['Actual'] = ecoAnnounce['Actual'].apply(numericFix)
+ecoAnnounce['Prior'] = ecoAnnounce['Prior'].apply(numericFix)
+ecoAnnounce['Revised'] = ecoAnnounce['Revised'].apply(numericFix)
+
+# %% Economic Release Split (e.g. Prior, Final)
+
+def periodFix(elm:str, periods:list = ['A', 'F', 'P', 'R', 'S', 'T']):
+    """
+    Converts a period with trailing letter to single letter variable
+    :param: elm (str) 
+        an element passed to extract trailing figures 
+    :returns: (str) 
+        a string representing a letter for annoucement release  
+
+    e.g.
+        [In]: '4Q T'    ->  [Out]: 'T'
+        
+        [In]: '2Q F'    ->  [Out]: 'F'
+    """
+    check = True
+    
+    for i in periods:
+        try:
+            if elm[-1] == i:
+                check = False
+                return " " + i
+        except TypeError:
+            pass
+
+    if check:
+        return ""
+    
+# retrieve the release type for the annoucement releases
+ecoAnnounce['Amendment'] = ecoAnnounce['Period'].apply(periodFix)
+
+# reconsturing the event names according to their amendments
+ecoAnnounce['Event'] = ecoAnnounce['Event'] + ecoAnnounce['Amendment'] 
+
+# %% Export cleaned/modified economic varaible 
 
 # store the macro-variables to temp folder
-ecoAnnounce.to_csv(tempDirectory+'cleanECO.csv')
-
-# %%
+ecoAnnounce.to_csv(tempDirectory+'cleanECO.csv', index=False)

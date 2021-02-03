@@ -3,11 +3,11 @@
 clear; 
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol normalVol treasuryData vixData
+load DATA blackVol yeildCurve vix
 
 
 % defines the date index for volatility measures
-date = blackVol{:,1};
+date = blackVol{:, 1};
 
 tenors = ["2", "5", "10"];              % tenors 2y; 5y; 10y
 terms  = ["0C", "0F", "01", "02"];      % terms 3m; 6m; 1y; 2y
@@ -16,8 +16,8 @@ termsID = ["3M", "6M", "1Y", "2Y"];
 
 %% (Figure 1) Swaption Implied Volatilities 
 
-fig = figure('visible', 'off');                % prevent display to MATLAB 
-set(gcf, 'Position', [100, 100, 950, 650]);    % setting figure dimensions
+fig = figure('visible', 'off');                 % prevent display 
+set(gcf, 'Position', [100, 100, 1250, 850]);    % setting figure dimensions
 
 left_color = [0 0 0];           % RGB for black
 right_color = [0 .5 .5];        % RGB for darker cyan
@@ -41,7 +41,8 @@ for i = 1:4
     
     % plotting the 10y Treasury rate on seperate y-axis
     yyaxis right;
-    plot(table2array(treasuryData(:,1)),table2array(treasuryData(:,2)), ...
+    plot(yeildCurve{yeildCurve.Date > datetime(1997, 1, 1), 1}, ...
+        yeildCurve{yeildCurve.Date > datetime(1997, 1, 1), 3}, ...
           'Linestyle', '--', 'color', right_color);
     title(strcat("Swap IV Term ", termsID(i), " vs 10y Treasury"));
     
@@ -74,7 +75,7 @@ for i = 1:4
     swap10y = strcat("USSV", terms(i), tenors(3), "Curncy");
     
     % select the appropriate VIX measure to compare swap vols
-    vixMeasure = vixData{:, 2};
+    vixMeasure = vix{:, 2};
     
     % select the appropriate swap iv terms
     volMeasure = blackVol{:, [swap2y, swap5y, swap10y]};
@@ -85,7 +86,7 @@ for i = 1:4
     
     % plot the VIX measure on a seperate axis
     yyaxis right;
-    plot(vixData.Date, vixMeasure, 'LineWidth', 1); hold off; 
+    plot(vix.DATE, vixMeasure, 'LineWidth', 1); hold off; 
     title(strcat("Swap IV Term ", termsID(i), " vs VIX"));
     
     % show the legend for the underlying series

@@ -15,17 +15,34 @@
 %   :param: window (type int)
 %       The number of periods to lookback, e.g. 1 = 1-day
 % 
+% Outputs:
+%   :param: diff (type matrix)
+%       Returns the differnce matrix for all components of the target
+%       variable, ignoring the first column of the target table
+%   :param: eco (type table)
+%       Returns the economic variables filtered by the target datetime
+%   
+%   NOTE: diff and eco variables are not subject to same lengths
+% 
 
-function [diff, eco] = differenceSplit(base, target, targetDate)
-
-    % change in regressed values pre-post announcement 
-    post = target(ismember(target{:, 1}, targetDate), :);
-    pre = target(ismember(target{:, 1}, targetDate-1), :);
+function [diff, eco] = differenceSplit(base, target, targetDate, window)
     
-    % compute the volatility measure difference
-    diff = post{:, 2:end} - pre{:, 2:end};      
+    yNames = target.Properties.VariableNames(2:end);
 
+    % target date windows for pre-post announcement 
+    post = target(ismember(target{:, 1}, targetDate), :);
+    pre = target(ismember(target{:, 1}, targetDate-window), :);
+
+    % compute the volatility measure difference and convert to table
+    diff = array2table(post{:, 2:end} - pre{:, 2:end});  
+    diff.DateTime = targetDate;
+    diff = movevars(diff, 'DateTime', 'Before', ...
+        diff.Properties.VariableNames{1});
+    
+    % re-assign table names accordingly
+    diff.Properties.VariableNames(2:end) = yNames; 
+    
     % economic filtered data matching for y date time 
-    eco = base(ismember(targetDate, base{:, 1}), :);
+    eco = base(ismember(base{:, 1}, targetDate), :);
     
 end
