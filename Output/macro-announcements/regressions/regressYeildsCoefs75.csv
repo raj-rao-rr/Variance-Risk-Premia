@@ -1,0 +1,30 @@
+Var,SVENY01,SVENY05,SVENY10
+CPI Ex Food and Energy MoM,0.578,0.16,0.189
+,0.174,0.793,0.756
+Change in Nonfarm Payrolls,0.017,0.016,0.012
+,0,0,0.003
+Conf. Board Consumer Confidence,0.006,0.005,0.005
+,0.021,0.175,0.238
+Durable Goods Orders,-0.048,0.063,0.196
+,0.889,0.899,0.692
+FOMC Rate Decision (Upper Bound),3.075,3.316,2.642
+,0.01,0.051,0.12
+GDP Annualized QoQ A,1.513,1.812,1.558
+,0.081,0.143,0.208
+ISM Manufacturing,0.001,0.011,0.011
+,0.863,0.128,0.113
+ISM Non-Manufacturing,0.018,0.023,0.019
+,0,0.002,0.009
+Initial Jobless Claims,-0.007,-0.01,-0.01
+,0,0,0
+PPI Ex Food and Energy MoM,0.077,0.092,-0.043
+,0.835,0.86,0.935
+Philadelphia Fed Business Outlook,0.006,0.007,0.006
+,0.024,0.044,0.125
+Retail Sales Advance MoM,0.73,1.14,1.043
+,0.062,0.042,0.062
+U. of Mich. Sentiment P,-0.001,0.002,0.003
+,0.638,0.609,0.473
+R^2,0.122,0.086,0.069
+RMSE,0.05,0.071,0.071
+nObs,719,719,719
