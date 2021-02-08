@@ -14,170 +14,134 @@ load VRP vrp
 
 % all output directories to export figures and files
 out_tms_dir = 'Output/macro-announcements/term-structure/';
+out_reg_dir = 'Output/macro-announcements/regressions/';
 
 % some global variables
 eventList = ecoMap.keys;
 
-%%
+swap2y = {'USSV0C2Curncy', 'USSV0F2Curncy', 'USSV012Curncy', ...
+    'USSV022Curncy'};
+swap5y = {'USSV0C5Curncy', 'USSV0F5Curncy', 'USSV015Curncy', ...
+    'USSV025Curncy'};
+swap10y = {'USSV0C10Curncy', 'USSV0F10Curncy', 'USSV0110Curncy', ...
+    'USSV0210Curncy'};
 
-% compute pivot table with index of DateTime, columns Events
-X = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
-y = yeildCurve; 
-window = 1;
-
-% find the intersection between date ranges of X and y variables
-targetDates = matchingError(X, y, window);
-
-% computes difference and economic surprise
-[diff, eco] = differenceSplit(X, y, targetDates, window);
-
-% fit the linear model for each y-value provided 
-mdl1 = fitlm(eco{:, 2:end}, diff{:, 4});
-mdl2 = fitlm(eco{:, 2:end}, diff{:, 3});
-mdl3 = fitlm(eco{:, 2:end}, diff{:, 2});
-
-fig = figure('visible', 'on');                 % prevent display 
-set(gcf, 'Position', [100, 100, 1750, 450]);    % setting figure dimensions
-
-subplot(1, 3, 1)
-hold on
-plot(eco{:, 1}, diff{:, 4}, 'LineWidth', 1, 'DisplayName', 'Actual')
-plot(eco{:, 1}, mdl1.Fitted, 'LineWidth', 1, 'DisplayName', 'Fitted')
-ylabel('Daily Changes')
-legend show
-hold off
-
-subplot(1, 3, 2)
-hold on
-plot(eco{:, 1}, diff{:, 3}, 'LineWidth', 1, 'DisplayName', 'Actual')
-plot(eco{:, 1}, mdl2.Fitted, 'LineWidth', 1, 'DisplayName', 'Fitted')
-legend show
-hold off
-
-subplot(1, 3, 3)
-hold on
-plot(eco{:, 1}, diff{:, 2}, 'LineWidth', 1, 'DisplayName', 'Actual')
-plot(eco{:, 1}, mdl3.Fitted, 'LineWidth', 1, 'DisplayName', 'Fitted')
-legend show
-hold off
+swap3m = {'USSV0C2Curncy', 'USSV0C5Curncy', 'USSV0C10Curncy'};
+swap6m = {'USSV0F2Curncy', 'USSV0F5Curncy', 'USSV0F10Curncy'};
+swap12m = {'USSV012Curncy', 'USSV015Curncy', 'USSV0110Curncy'};
+swap24m = {'USSV022Curncy', 'USSV025Curncy', 'USSV0210Curncy'};
 
 
-%% Construct term structure graphs 
+%% Construct term structure graphs for Term (2y, 5y, 10y)
 
-volData = {blackVol, vrp};
-volFolder = {'iv', 'vrp'};
+a = readtable('regressIVCoefs.csv');
+[n, ~] = size(a);
 
-% iterate through various volatility measures
-for data = 1:2
+% iterate through each RHV 
+for cRow = 1:2:n-3
+
+    fig = figure('visible', 'off');  
+    set(gcf, 'Position', [100, 100, 1050, 600]);
+
+    % row containing the pValues for each coefs
+    pRow = cRow + 1; 
+
+    % filter each RHV variable to check significance
+    filter2y = a(cRow:pRow, [{'Var'}, swap2y]);
+    filter5y = a(cRow:pRow, [{'Var'}, swap5y]);
+    filter10y = a(cRow:pRow, [{'Var'}, swap10y]);
+
+    rhv = filter2y{1, 'Var'};           % name of RHV
+    threshold = 0.1;                    % p-value threshold
     
-    % volatility data being examined
-    vol = volData{data};
-    volName = volFolder(data);
-    
-    for event = eventList
-        fig = figure('visible', 'off');  
-        set(gcf, 'Position', [100, 100, 1250, 600]);
+    % conditional filters for each tenor
+    cond2y = filter2y{2, swap2y} <= threshold;  
+    cond5y = filter5y{2, swap5y} <= threshold; 
+    cond10y = filter10y{2, swap10y} <= threshold; 
 
-        name = event{:};
-        eventName = ecoMap(name); period = 1;
-
-        % filter economic dates according to interest rate regime 
-        filterLowEco = ecoData(ismember(ecoData{:, 1}, lowIR{:, 1}), :);
-        filterHighEco = ecoData(ismember(ecoData{:, 1}, highIR{:, 1}), :);
-
-        % filter economic data according to appropriate event
-        filterLowData=filterLowEco(strcmp(filterLowEco.Ticker,event), :);
-        filterHighData=filterHighEco(strcmp(filterHighEco.Ticker,event),:);
-
-        % match target dates according to the date prior examined
-        targetLowDate = matchingError(filterLowData, vol, period);
-        targeHighDate = matchingError(filterHighData, vol, period);
-
-        % select dates of pre/post annoucment window for vol measures
-        afterLowAnnouce = vol(ismember(vol{:, 1}, ...
-            targetLowDate), :);
-        beforeLowAnnouce = vol(ismember(vol{:, 1}, ...
-            targetLowDate-period), :);
-
-        afterHighAnnouce = vol(ismember(vol{:, 1}, ...
-            targeHighDate), :);
-        beforeHighAnnouce = vol(ismember(vol{:, 1}, ...
-            targeHighDate-period), :);
-
-        % reshape for easy plotting in environment
-        afterLowValues = reshape(mean(afterLowAnnouce{:, 2:end}),4,3);
-        beforeLowValues = reshape(mean(beforeLowAnnouce{:, 2:end}),4,3);
-
-        afterHighValues = reshape(mean(afterHighAnnouce{:, 2:end}),4,3);
-        beforeHighValues = reshape(mean(beforeHighAnnouce{:, 2:end}),4,3);
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % low interest rate enviornment
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        subplot(1,2,1); hold on;
+    % if all component parts are signfiiciant, then we return
+    % there are 4 elements within each term structure
+    if sum(cond2y) == 4 || sum(cond5y) == 4 || sum(cond10y) == 4
+        hold on
+        plot(filter2y{1, swap2y}, 'DisplayName', '2y Term', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
+        plot(filter5y{1, swap5y}, 'DisplayName', '5y Term', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
+        plot(filter10y{1, swap10y}, 'DisplayName', '10y Term', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
         
-        plot(afterLowValues(:, 1), 'LineStyle', '--', 'color', 'red', ...
-            'Marker', 'd', 'MarkerFaceColor','red', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '2y (post Ann.)');
-        plot(beforeLowValues(:, 1), 'LineStyle', '-', 'color', 'red', ...
-            'Marker', 's', 'MarkerFaceColor','red', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '2y (pre Ann.)');
+        title({strcat("Swaption Implied Volatility Response to ", rhv{:}), ...
+        '(estimates where p-value < 0.10)'})
+        xticks(1:4)
+        xticklabels({'3m', '6m', '12m', '24m'})
+        xlabel('Tenor (in months)')
+        ylabel('Regression Estimates (coefs)')
+        hold off
+        legend show
 
-        plot(afterLowValues(:, 2), 'LineStyle', '--', 'color', 'blue', ...
-            'Marker', 'd', 'MarkerFaceColor','blue', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '5y (post Ann.)');
-        plot(beforeLowValues(:, 2), 'LineStyle', '-', 'color', 'blue', ...
-            'Marker', 's', 'MarkerFaceColor','blue', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '5y (pre Ann.)');
-
-        plot(afterLowValues(:, 3), 'LineStyle', '--', 'color', 'green', ...
-            'Marker', 'd', 'MarkerFaceColor','green', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '10y (post Ann.)');
-        plot(beforeLowValues(:, 3), 'LineStyle', '-', 'color', 'green', ...
-            'Marker', 's', 'MarkerFaceColor','green', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '10y (pre Ann.)');
-
-        xticks(1:4); xticklabels({'3m', '6m', '12m', '24m'});
-        ylabel('Variance Risk Premium');
-        title({'Low Interest Rate Regime', name})
-        legend('show', 'Location', 'northwest', 'fontsize', 8);
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % high interest rate enviornment
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        subplot(1,2,2); hold on;
-
-        plot(afterHighValues(:, 1), 'LineStyle', '--', 'color', 'red', ...
-            'Marker', 'd', 'MarkerFaceColor','red', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '2y (post Ann.)');
-        plot(beforeHighValues(:, 1), 'LineStyle', '-', 'color', 'red', ...
-            'Marker', 's', 'MarkerFaceColor','red', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '2y (pre Ann.)');
-
-        plot(afterHighValues(:, 2), 'LineStyle', '--', 'color', 'blue', ...
-            'Marker', 'd', 'MarkerFaceColor','blue', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '5y (post Ann.)');
-        plot(beforeHighValues(:, 2), 'LineStyle', '-', 'color', 'blue', ...
-            'Marker', 's', 'MarkerFaceColor','blue', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '5y (pre Ann.)');
-
-        plot(afterHighValues(:, 3), 'LineStyle', '--', 'color', 'green', ...
-            'Marker', 'd', 'MarkerFaceColor','green', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '10y (post Ann.)');
-        plot(beforeHighValues(:, 3), 'LineStyle', '-', 'color', 'green', ...
-            'Marker', 's', 'MarkerFaceColor','green', 'MarkerEdgeColor', ...
-            'black', 'DisplayName', '10y (pre Ann.)');
-
-        xticks(1:4); xticklabels({'3m', '6m', '12m', '24m'});
-        title({'High Interest Rate Regime', name})
-
-        % export the image to Interest Bucket for VRP measures
-        filename = strcat(out_tms_dir, volName{:}, "/", event, '.jpg');
-        
-        exportgraphics(fig, filename);
-        
-    end
-    
+        % export figure to correct directory
+        exName = strcat(out_tms_dir, "iv/", rhv{:}, " (term).jpg");
+        exportgraphics(fig, exName{:});
+    end  
 end
 
-fprintf('Term structure graph around macro-annoucement created.\n')
+%% Construct term structure graphs for Tenor (3m, 6m, 12m, 24m)
+
+a = readtable('regressIVCoefs.csv');
+[n, ~] = size(a);
+
+% iterate through each RHV 
+for cRow = 1:2:n-3
+
+    fig = figure('visible', 'off');  
+    set(gcf, 'Position', [100, 100, 1050, 600]);
+
+    % row containing the pValues for each coefs
+    pRow = cRow + 1; 
+
+    % filter each RHV variable to check significance
+    filter3m = a(cRow:pRow, [{'Var'}, swap3m]);
+    filter6m = a(cRow:pRow, [{'Var'}, swap6m]);
+    filter12m = a(cRow:pRow, [{'Var'}, swap12m]);
+    filter24m = a(cRow:pRow, [{'Var'}, swap24m]);
+
+    rhv = filter3m{1, 'Var'};           % name of RHV
+    threshold = 0.1;                    % p-value threshold
+    
+    % conditional filters for each tenor
+    cond3m = filter3m{2, swap3m} <= threshold;  
+    cond6m = filter6m{2, swap6m} <= threshold; 
+    cond12m = filter12m{2, swap12m} <= threshold; 
+    cond24m = filter24m{2, swap24m} <= threshold; 
+    
+    % if all component parts are signfiiciant, then we return
+    % there are 4 elements within each term structure
+    if sum(cond3m) == 3 || sum(cond6m) == 3 || sum(cond12m) == 3 || sum(cond24m) == 3
+        hold on
+        plot(filter3m{1, swap3m}, 'DisplayName', '3m Tenor', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
+        plot(filter6m{1, swap6m}, 'DisplayName', '6m Tenor', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
+        plot(filter12m{1, swap12m}, 'DisplayName', '12m Tenor', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
+        plot(filter24m{1, swap24m}, 'DisplayName', '24m Tenor', 'LineWidth', 1, ...
+            'LineStyle', '-', 'Marker', 's')
+        
+        title({strcat("Swaption Implied Volatility Response to ", rhv{:}), ...
+        '(estimates where p-value < 0.10)'})
+        xticks(1:4)
+        xticklabels({'2y', '5y', '10y'})
+        xlabel('Term (in months)')
+        ylabel('Regression Estimates (coefs)')
+        hold off
+        legend show
+
+        % export figure to correct directory
+        exName = strcat(out_tms_dir, "iv/", rhv{:}, " (tenor).jpg");
+        exportgraphics(fig, exName{:});
+    end
+end
+
+%%
+
+fprintf('Term structure graph for macro-annoucement estimates created.\n')
