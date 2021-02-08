@@ -25,8 +25,8 @@ The project code follows a linear order of execution, starting with the `main.m`
     -> Code/vrpCalculation.m
     -> Code/vrpGraphs.m	
   -> Code/macroRegress.m
-    -> Code/macroStd.m
-    -> Code/macroTermStrucut.m
+    -> Code/macroBucket.m
+    -> Code/macroTermStruct.m
 ```
 
 ### 3.2 	`/Code`
@@ -60,7 +60,7 @@ Folder and sub-folders are provided to store graphs and tables for forecasts, re
 - **/.../garch-forecasts/** stores all GARCH forecasts for each swap tenor against implied volatility levels, for each term
 - **/.../macro-annoucements/** stores .csv files that perform analysis against economic annoucements (e.g. CPI) 
   - **/.../regressions/** stores coefficients for changes in volatility measures regressed on macro-economic annoucements  
-  - **/.../std-buckets/** stores graphs of changes in volatility measures bucketed by the standard deviation of each economic forecast / interest rate regime
+  - **/.../buckets/** stores graphs of changes in volatility measures bucketed by the standard deviation of each economic forecast / interest rate regime
   - **/.../term-structure/** stores term structures for regression estimates conditioned on standard deviation and interest rate regime  
 - **/.../autocorrelations/** stores all autocorrelation figures associated with each swaption security's VRP measure
 
