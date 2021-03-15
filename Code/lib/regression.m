@@ -15,6 +15,8 @@
 %   :param: map (type collection) 
 %       The column from the economic surprises, to regress on 
 %       e.g. "SurpriseZscore", "Surprises"
+%   :param: method (type str)
+%       The method implemented for computing the difference matrix
 % 
 % Outputs:
 %   :param: coefTB (type table)
@@ -24,8 +26,8 @@
 %       A regression parameter table with specific column indicators
 %       (R-Squared, Adj. R-Squared, Root MSE, Y-Name)
 
-function modelTB = regression(X, y, window)
-
+function modelTB = regression(X, y, method)
+    
     % retrieve the column number for the each variable 
     [~, n] = size(y.Properties.VariableNames);
     [~, k] = size(X.Properties.VariableNames);
@@ -40,10 +42,10 @@ function modelTB = regression(X, y, window)
     pos2 = 2:2:(2*(k-1));
     
     % find the intersection between date ranges of X and y variables
-    targetDates = matchingError(X, y, window);
-
+    targetDates = matchingError(X, y);
+    
     % computes difference and economic surprise
-    [diff, eco] = differenceSplit(X, y, targetDates, window);
+    [diff, eco] = differenceSplit(X, y, targetDates, method);
     
     % return the variable names for y and X
     yNames = diff.Properties.VariableNames(2:end);
@@ -55,7 +57,7 @@ function modelTB = regression(X, y, window)
         
         % fit the linear model for each y-value provided 
         mdl = fitlm(eco{:, 2:end}, diff{:, index});
-
+     
         estimate = mdl.Coefficients.Estimate(2:end);     % Estimates
         pValue = mdl.Coefficients.pValue(2:end);         % pValue
         
@@ -70,7 +72,7 @@ function modelTB = regression(X, y, window)
         
         % assign rows for the model table
         modelTB(:, index-1) = round([modelCol; rsquared; rMSE; nObs], 3);
-    
+        
     end 
     
     % convert cell matrix to a table 
