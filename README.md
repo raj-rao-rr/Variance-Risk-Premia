@@ -29,9 +29,7 @@ Folder for all unfiltered, raw input data for financial time series.
 
 ### 3.3 	`/Temp`
 Folder for storing data files after being read and cleaned of missing/obstructed values.
-- **INIT.mat** stores initializing variables for the code base (e.g. root directory)
 - **DATA.mat** stores the downloaded data from input files (e.g. swap rates, swaption implied volatility)
-- **VRP.mat** stores the computed variance risk premia measures for each tenor and term
 - **FSigmaF.mat** stores the daily GARCH(1,1) volatility forecasts, including lower and upper bounds 
 - **SigA.mat** stores the annualized GARCH(1,1) volatility forecasts, including 95% bounds
 
@@ -58,7 +56,8 @@ Data Fields that are semi-manually updated
 1.	Login into your Bloomberg Professional Service account, you will need it to retrieve historical data. 
 2.	Open the following excel files `sp500.xlsx`, `swaptionIV.xlsx`, and `swapRates.xlsx` on your local machine. Go to the Bloomberg tab on Excel and click the **Refresh Worksheets** icon to update the Bloomberg formulas, populating the data fields. *Note if working on a separate server or cluster, these refreshed worksheets will need to be transferred to the designated workstation*
 3.	On your Bloomberg terminal go to the ECO tab and begin downloading the requested economic announcement data to a `.csv` file name _**ecoRelease.csv**_. Due to the interval restrictions imposed by Bloomberg for the exportation of the data, you will need to export multiple times per defined intervals.
-4. Once all data has been updated you are free to run the entire project base. You may opt to run the `main.m` file in a Matlab interactive session or via terminal 
+4. Once all data has been updated you are free to run the entire project base. You may opt to run the `main.m` file in a Matlab interactive session or via terminal on your local machine or HPC cluster.
+
     ```
     % %    e.g. running code via batch on the FRBNY RAN HPC Cluster
     $ matlab20a-batch-withemail 10 main.m 
