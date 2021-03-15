@@ -5,7 +5,7 @@ clear;
 load INIT root_dir
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol yeildCurve vix swapData fedfunds lowIR highIR
+load DATA iv yeildCurve vix swaps fedfunds lowIR highIR
 
 % loading in temp file for GARCH forecasts
 load SigA SigA LB UB
@@ -26,7 +26,7 @@ names = vrp.Properties.VariableNames(2:end-1);
 
 %% (Figure 3) Swaption Implied Vol vs. Forecasted Real Vol 
 
-% incrementing across each tenor (e.g. 2y, 5y)
+% incrementing across each tenor (e.g. 2y, 5y, 10y)
 for i = 1:3
     
     fig = figure('visible', 'off');                                         % prevent display to MATLAB
@@ -36,34 +36,38 @@ for i = 1:3
     for j = 1:4
         
         % naming convention for swap securities 
-        index = strcat("USSV", terms(j), tenors(i), "Curncy");
-    
-        ref1 = ismember(blackVol{:,1}, SigA{:,1});                          % matching the forecast length to IV data
-        ref2 = ismember(SigA{:,1}, blackVol{:,1});                          % matching the forecast length to IV data
-        date = blackVol{ref1,1};                                            % defines the date index for vol forecasts
+        index = strcat("USSV", terms(j), tenors(i), " CURNCY");
+        date = intersect(iv{:,1}, SigA{:,1});                               % defines the date index for vol forecasts
         
         % GARCH annualized measures 
-        upper = UB{ref2, index};    % 97.5th percentile GARCH sim
-        mid = SigA{ref2, index};    % mean / 50th percentile
-        lower = LB{ref2, index};    % 2.5th percentile GARCH sim
+        upper = UB{ismember(UB{:, 1}, date), index};                        % 97.5th percentile GARCH sim
+        mid = SigA{ismember(SigA{:, 1}, date), index};                      % mean / 50th percentile
+        lower = LB{ismember(LB{:, 1}, date), index};                        % 2.5th percentile GARCH sim
         
         % implied volatility data (black-scholes)  
-        iv = blackVol{ref1, index};                                            
-
-        h = zeros(1,4);            % plot-figure object matrix
+        vol = iv{ismember(iv{:, 1}, date), index};                                            
+        
+        % plot-figure object matrix
+        h = zeros(1,4);                                                     
         
         % construct the new modified subplots
         subplot(4,1,j); hold on; 
 
         % plot forecasted volatility against swaption IV
         h(1,1) = plot(date, upper, 'DisplayName', '95% Bounds', ...
-            'LineStyle', '--', 'Color', 'k', 'LineWidth', 0.5); 
-        h(1,2) = plot(date, iv, 'DisplayName', 'E[\sigma^Q]', ...
+            'LineStyle', '--', 'Color', [0.25, 0.25, 0.25], 'LineWidth', 0.1); 
+        h(1,2) = plot(date, vol, 'DisplayName', 'E[\sigma^Q]', ...
             'Color', 'b'); 
         h(1,3) = plot(date, mid, 'DisplayName', 'E[\sigma^P]', ...
             'Color', 'r'); 
         h(1,4) = plot(date, lower, 'DisplayName', '95% Bounds', ...
-            'LineStyle', '--', 'Color', 'k', 'LineWidth', 0.5); 
+            'LineStyle', '--', 'Color', [0.25, 0.25, 0.25], 'LineWidth', 0.1); 
+        ylim([0, 125])
+        
+        % re-assigning the x-ticks datatimes to be in 2 year intervals
+        dateV = date(1):caldays(365*2):date(end);
+        xticks(dateV)
+        datetick('x','yyyy', 'keepticks', 'keeplimits');
         
         title(strcat("Tenor ", tenors(i), "Y, Term ", termsID(j)));         % specify legend to match tenor and term
         hold off; legend(h(2:end), 'Location', 'northwest');                % specify the legend displays
@@ -78,14 +82,14 @@ fprintf('GARCH graphs were created.\n');
 
 %% (Figure 4) Variance Risk Premia 
 
-fig = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'on');                 % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 for i = 1:4
     % construct the names for each swaption tenor 
-    swap2y  = strcat("USSV", terms(i), tenors(1), "Curncy");
-    swap5y  = strcat("USSV", terms(i), tenors(2), "Curncy");
-    swap10y = strcat("USSV", terms(i), tenors(3), "Curncy");
+    swap2y  = strcat("USSV", terms(i), tenors(1), " CURNCY");
+    swap5y  = strcat("USSV", terms(i), tenors(2), " CURNCY");
+    swap10y = strcat("USSV", terms(i), tenors(3), " CURNCY");
     
     % construct the new modified subplots
     subplot(2,2,i); hold on; 
@@ -95,7 +99,6 @@ for i = 1:4
     
     % compute the average VRP over the plot period
     avgVRP = mean(mean(vrp{:, [swap2y, swap5y, swap10y]}, 2));
-    % disp(avgVRP)
     
     % plotting the vrp measures for each tenor at a term 
     plot(date, vrp{:, swap2y}, 'color', 'blue');
@@ -140,9 +143,9 @@ set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 for i = 1:3
     % construct the names for each swaption tenor 
-    swap2y  = strcat("USSV", terms(i), tenors(1), "Curncy");
-    swap5y  = strcat("USSV", terms(i), tenors(2), "Curncy");
-    swap10y = strcat("USSV", terms(i), tenors(3), "Curncy");
+    swap2y  = strcat("USSV", terms(i), tenors(1), " CURNCY");
+    swap5y  = strcat("USSV", terms(i), tenors(2), " CURNCY");
+    swap10y = strcat("USSV", terms(i), tenors(3), " CURNCY");
     
     % construct the new modified subplots
     subplot(3,1,i); hold on; 

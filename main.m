@@ -20,28 +20,22 @@ addpath([root_dir filesep 'Output' filesep 'macro-announcements'])
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
     'regressions'])  
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
-    'std-buckets']) 
+    'buckets']) 
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
-    'std-buckets' filesep 'iv']) 
+    'buckets' filesep 'iv']) 
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
-    'std-buckets' filesep 'rv']) 
+    'buckets' filesep 'rv']) 
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
-    'std-buckets' filesep 'vrp']) 
-addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
-    'term-structure']) 
-addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
-    'term-structure' filesep 'iv']) 
+    'buckets' filesep 'vrp']) 
  
-% saving initialization of the main script
+% saving initialization of the rmain script
 save 'Temp/INIT.mat' root_dir
 
 %% running project scripts in linear order 
-% run('dataReader.m');        % often fails on first run, simply run again
-% run('dataFilter.m');
+% run('dataReader.m');        
 % run('volGraphs.m');
 % run('forecastRV.m');
 % run('vrpCalculation.m');
 % run('vrpGraphs.m');
+% run('macroBucket.m');
 % run('macroRegress.m');
-% run('macroStd.m');
-% run('macroTermStruct.m');

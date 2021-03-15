@@ -3,11 +3,11 @@
 clear; 
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA blackVol yeildCurve vix
+load DATA iv yeildCurve vix
 
 
 % defines the date index for volatility measures
-date = blackVol{:, 1};
+date = iv{:, 1};
 
 tenors = ["2", "5", "10"];              % tenors 2y; 5y; 10y
 terms  = ["0C", "0F", "01", "02"];      % terms 3m; 6m; 1y; 2y
@@ -27,17 +27,17 @@ set(fig,'defaultAxesColorOrder', [left_color; right_color]);
 
 for i = 1:4
     % construct the names for each swaption tenor 
-    swap2y  = strcat("USSV", terms(i), tenors(1), "Curncy");
-    swap5y  = strcat("USSV", terms(i), tenors(2), "Curncy");
-    swap10y = strcat("USSV", terms(i), tenors(3), "Curncy");
+    swap2y  = strcat("USSV", terms(i), tenors(1), " CURNCY");
+    swap5y  = strcat("USSV", terms(i), tenors(2), " CURNCY");
+    swap10y = strcat("USSV", terms(i), tenors(3), " CURNCY");
     
     % construct the new modified subplots
     subplot(2,2,i); hold on; 
     
     % plotting the swap IV data for each tenor at a term 
-    plot(date, blackVol{:,swap2y}, 'color', 'blue');
-    plot(date, blackVol{:,swap5y}, 'color', '#77AC30'); 
-    plot(date, blackVol{:,swap10y}, 'color', 'red');
+    plot(date, iv{:,swap2y}, 'color', 'blue');
+    plot(date, iv{:,swap5y}, 'color', '#77AC30'); 
+    plot(date, iv{:,swap10y}, 'color', 'red');
     
     % plotting the 10y Treasury rate on seperate y-axis
     yyaxis right;
@@ -70,19 +70,19 @@ set(gcf, 'Position', [100, 100, 950, 650]);   % setting figure dimensions
 
 for i = 1:4
     % construct the names for each swaption tenor 
-    swap2y  = strcat("USSV", terms(i), tenors(1), "Curncy");
-    swap5y  = strcat("USSV", terms(i), tenors(2), "Curncy");
-    swap10y = strcat("USSV", terms(i), tenors(3), "Curncy");
+    swap2y  = strcat("USSV", terms(i), tenors(1), " CURNCY");
+    swap5y  = strcat("USSV", terms(i), tenors(2), " CURNCY");
+    swap10y = strcat("USSV", terms(i), tenors(3), " CURNCY");
     
     % select the appropriate VIX measure to compare swap vols
     vixMeasure = vix{:, 2};
     
     % select the appropriate swap iv terms
-    volMeasure = blackVol{:, [swap2y, swap5y, swap10y]};
+    volMeasure = iv{:, [swap2y, swap5y, swap10y]};
     
     % plotting volatility graph across term structure
     subplot(2,2,i);
-    plot(blackVol.Date, volMeasure); hold on 
+    plot(iv.Date, volMeasure); hold on 
     
     % plot the VIX measure on a seperate axis
     yyaxis right;

@@ -5,7 +5,8 @@ clear;
 load INIT root_dir
 
 % loading in economic and volatility data
-load DATA yeildCurve ecoMap ecoData blackVol lowIR highIR
+load DATA yeildCurve ecoMap blackVol lowIR highIR fedfunds swap3m10y ...
+    swap3m2y swap3m5y
 load FILTER cleanEco ecoSTD25 ecoSTD75
 load SigA SigA 
 
@@ -18,228 +19,135 @@ out_reg_dir = 'Output/macro-announcements/regressions/';
 % some global variables
 eventList = ecoMap.keys;
 
+%% Macro Regressions on Implied Volatility y = β + β*Z + ϵ
 
-%% Macro Regressions on Treausry Yeilds 1y, 5y, 10y
+% compute pivot table with Surprise Z-score
+beta1 = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
 
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
+% rename the table names by beta coefficient intuition 
+beta1.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta1"), ...
+    beta1.Properties.VariableNames(2:end));
 
 % compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(pvtb, yeildCurve, 1);
+tb1 = regression(beta1, blackVol, 'diff');
 
 % write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefs.csv'));  
+writetable(tb1, strcat(out_reg_dir, 'regressImpVol.csv'));
 
-%% Macro Regressions on Treasury Yeilds 1y, 5y, 10y (low uncertainty)
+%% Macro Regressions on Implied Volatility y = β + β*Z + β*σ + + β*σ*Z + ϵ
 
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD25, 'SurpriseZscore', 'DateTime', 'Event');
+% compute pivot table with Surprise Z-score and restricted events
+sig_events = {'Change in Nonfarm Payrolls', 'ISM Manufacturing', ...
+    'PPI Ex Food and Energy MoM', 'Retail Sales Advance MoM'};
+filterEco = cleanEco(ismember(cleanEco.Event, sig_events), :);
 
+% comptue the beta components for each event 
+beta1 = pivotTable(filterEco, 'SurpriseZscore', 'DateTime', 'Event');
+beta2 = pivotTable(filterEco, 'StdDev', 'DateTime', 'Event');
+beta3 = pivotTable(filterEco, 'StdDev', 'DateTime', 'Event');
+beta3{:, 2:end} = beta1{:, 2:end} .* beta2{:, 2:end};
+
+% rename the table names by beta coefficient intuition 
+beta1.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta1"), ...
+    beta1.Properties.VariableNames(2:end));
+beta2.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta2"), ...
+    beta1.Properties.VariableNames(2:end));
+beta3.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta3"), ...
+    beta1.Properties.VariableNames(2:end));
+ 
 % compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(pvtb, yeildCurve, 1);
+tb1 = regression([beta1, beta2(:, 2:end), beta3(:, 2:end)], blackVol, 'diff');
+
+% write regression coeffcients to table
+writetable(tb1, strcat(out_reg_dir, 'regressImpVolUncertainty_reduced.csv'));
+
+%% Macro Regressions on Implied Volatility y = β + β*Z + β*U25 + + β*U25*Z + ϵ
+
+% compute pivot table with Surprise Z-score and restricted events
+sig_events = {'Change in Nonfarm Payrolls', 'ISM Manufacturing', ...
+    'PPI Ex Food and Energy MoM', 'Retail Sales Advance MoM'};
+filterEco = cleanEco(ismember(cleanEco.Event, sig_events), :);
+
+% comptue the beta components for each event 
+beta1 = pivotTable(filterEco, 'SurpriseZscore', 'DateTime', 'Event');
+beta2 = pivotTable(filterEco, 'StdDev', 'DateTime', 'Event');
+
+for col = 2:length(beta1.Properties.VariableNames)
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefs25.csv'));      
-
-%% Macro Regressions on Treasury Yeilds 1y, 5y, 10y (high uncertainty)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD75, 'SurpriseZscore', 'DateTime', 'Event');
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(pvtb, yeildCurve, 1);
+    % filter only rows with values > 0 (standard deviation positive)
+    series = beta2{beta2{:, col} > 0, col};
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefs75.csv'));
-
-%% Macro Regressions on Treasury Yeilds 1y, 5y, 10y (low rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, lowIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, yeildCurve, 1);
+    % determine the uncertainity cut-off windows
+    bound = prctile(series, 25); 
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefsLowRate.csv'));
-
-%% Macro Regressions on Treasury Yeilds 1y, 5y, 10y (high rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, highIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, yeildCurve, 1);
+    % condition periods based on uncertainity windows 
+    idx1 = (beta2{:, col} <= bound); idx2 = (beta2{:, col} > bound);
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefsHighRate.csv'));
-
-%% Macro Regressions on Treasury Yeilds (low uncertainty and low rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD25, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, lowIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, yeildCurve, 1);
+    % remaping the values by indicator random variable for rate regime
+    beta2(idx1, col) = {1}; beta2(idx2, col) = {0}; 
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefsLowRate25.csv'));
+end
 
-%% Macro Regressions on Treasury Yeilds (low uncertainty and high rate env)
+beta3 = pivotTable(filterEco, 'StdDev', 'DateTime', 'Event');
+beta3{:, 2:end} = beta1{:, 2:end} .* beta2{:, 2:end};
 
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD25, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, highIR{:, 1}), :); 
-
+% rename the table names by beta coefficient intuition 
+beta1.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta1"), ...
+    beta1.Properties.VariableNames(2:end));
+beta2.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta2"), ...
+    beta1.Properties.VariableNames(2:end));
+beta3.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta3"), ...
+    beta1.Properties.VariableNames(2:end));
+ 
 % compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, yeildCurve, 1);
+tb1 = regression([beta1, beta2(:, 2:end), beta3(:, 2:end)], blackVol, 'diff');
+
+% write regression coeffcients to table
+writetable(tb1, strcat(out_reg_dir, 'regressImpVolUncertainty_25.csv'));
+
+%% Macro Regressions on Implied Volatility y = β + β*Z + β*U75 + + β*U75*Z + ϵ
+
+% compute pivot table with Surprise Z-score and restricted events
+sig_events = {'Change in Nonfarm Payrolls', 'ISM Manufacturing', ...
+    'PPI Ex Food and Energy MoM', 'Retail Sales Advance MoM'};
+filterEco = cleanEco(ismember(cleanEco.Event, sig_events), :);
+
+% comptue the beta components for each event 
+beta1 = pivotTable(filterEco, 'SurpriseZscore', 'DateTime', 'Event');
+beta2 = pivotTable(filterEco, 'StdDev', 'DateTime', 'Event');
+
+for col = 2:length(beta1.Properties.VariableNames)
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefsHighRate25.csv'));
-
-%% Macro Regressions on Treasury Yeilds (high uncertainty and low rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD75, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, lowIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, yeildCurve, 1);
+    % filter only rows with values > 0 (standard deviation positive)
+    series = beta2{beta2{:, col} > 0, col};
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefsLowRate75.csv'));
-
-%% Macro Regressions on Treasury Yeilds (low uncertainty and high rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD75, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, highIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, yeildCurve, 1);
+    % determine the uncertainity cut-off windows
+    bound = prctile(series, 75); 
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressYeildsCoefsHighRate75.csv'));
-
-%% Macro Regressions on Implied Volatility
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(pvtb, blackVol, 1);
-
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefs.csv'));  
-
-%% Macro Regressions on Implied Volatlity (low uncertainty)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD25, 'SurpriseZscore', 'DateTime', 'Event');
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(pvtb, blackVol, 1);
+    % condition periods based on uncertainity windows 
+    idx1 = (beta2{:, col} < bound); idx2 = (beta2{:, col} >= bound);
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefs25.csv'));      
-
-%% Macro Regressions on Implied Volatility (high uncertainty)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD75, 'SurpriseZscore', 'DateTime', 'Event');
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(pvtb, blackVol, 1);
+    % remaping the values by indicator random variable for rate regime
+    beta2(idx1, col) = {0}; beta2(idx2, col) = {1}; 
     
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefs75.csv'));
+end
 
-%% Macro Regressions on Implied Volatility (low rate env)
+beta3 = pivotTable(filterEco, 'StdDev', 'DateTime', 'Event');
+beta3{:, 2:end} = beta1{:, 2:end} .* beta2{:, 2:end};
 
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, lowIR{:, 1}), :); 
-
+% rename the table names by beta coefficient intuition 
+beta1.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta1"), ...
+    beta1.Properties.VariableNames(2:end));
+beta2.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta2"), ...
+    beta1.Properties.VariableNames(2:end));
+beta3.Properties.VariableNames(2:end) = cellfun(@(a) strcat(a, " Beta3"), ...
+    beta1.Properties.VariableNames(2:end));
+ 
 % compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, blackVol, 1);
-    
+tb1 = regression([beta1, beta2(:, 2:end), beta3(:, 2:end)], blackVol, 'diff');
+
 % write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefsLowRate.csv'));
-
-%% Macro Regressions on Implied Volatiltiy (high rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(cleanEco, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, highIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, blackVol, 1);
-    
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefsHighRate.csv'));
-
-%% Macro Regressions on Implied Volatility (low uncertainty and low rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD25, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, lowIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, blackVol, 1);
-    
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefsLowRate25.csv'));
-
-%% Macro Regressions on Implied Volatility (low uncertainty and high rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD25, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, highIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, blackVol, 1);
-    
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefsHighRate25.csv'));
-
-%% Macro Regressions on Implied Volatility (high uncertainty and low rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD75, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, lowIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, blackVol, 1);
-    
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefsLowRate75.csv'));
-
-%% Macro Regressions on Implied Volatility (low uncertainty and high rate env)
-
-% compute pivot table with index of DateTime, columns Events
-pvtb = pivotTable(ecoSTD75, 'SurpriseZscore', 'DateTime', 'Event');
-
-filter = pvtb(ismember(pvtb{:, 1}, highIR{:, 1}), :); 
-
-% compute regression tables with a 1-difference window for Yeild comp. 
-tb1 = regression(filter, blackVol, 1);
-    
-% write regression coeffcients to table
-writetable(tb1, strcat(out_reg_dir, 'regressIVCoefsHighRate75.csv'));
+writetable(tb1, strcat(out_reg_dir, 'regressImpVolUncertainty_75.csv'));
 
 %%
 

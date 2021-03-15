@@ -3,20 +3,19 @@
 clear;
 
 % loading in temp file 
-load DATA swapRates swapData
-
+load DATA swaps iv
 
 %% Swap Log Return 
 
-[T, N] = size(swapData);
+[T, N] = size(swaps);
 returns = zeros(T-1, N-1);      % initialize the size of return matrix 
 
 % iterate through each swap rate
 for n = 1:N-1                                                               
-    swap = swapData{:,n+1};  % start at the second columns, first is dates
+    swap = swaps{:, n+1};  % start at the second columns, first is date
     
     % compute the log return for each term 
-    returns(:,n) = log(swap(2:end)) - log(swap(1:end-1));
+    returns(:, n) = log(swap(2:end)) - log(swap(1:end-1));
 end  
 
 %% Volatility Model Initialization
@@ -26,82 +25,89 @@ end
 %        https://www.mathworks.com/help/econ/garch.html
 %-------------------------------------------------------------
 
-% initialize a Garch(1,1) model with p=1 and q=1                            (eGARCH suffers cond. var positivity error)
-model = garch('ARCHLags', 1, 'GARCHLags', 1, 'Distribution', ...
-    'Gaussian', 'Offset', NaN); 
+% initialize a GARCH variance model (Default distribution is Gaussian)                    
+Mdl1 = garch(1, 1);
+Mdl2 = egarch(1, 1);
+Mdl3 = gjr(1, 1);
 
-% set the options for forecast model optimization
-options = optimoptions(@fmincon, 'Display' , 'off', 'Diagnostics', ...
-    'off', 'Algorithm', 'sqp', 'TolCon', 1e-7);
-
-nTrials = 1000;                    % number of independent random trials
-horizon = 504;                     % VaR forecast horizon (# observations)
+% % set the options for forecast model optimization
+% options = optimoptions(@fmincon, 'Display' , 'off', 'Diagnostics', ...
+%     'off', 'Algorithm', 'sqp', 'TolCon', 1e-7);
+        
+nTrials = 5000;                    % number of independent random trials
+horizon = 506;                     % VaR forecast horizon (# observations)
 
 m1 = [3, 6, 12, 24];               % swap terms 3m; 6m; 12m; 24m
-mm = m1*21;                        % re-index for trading days
+mm = m1*21+2;                      % re-index for trading days              (1 month = 21 days)
 
-rollWindow = 2654;                 % train first 2137 sample data 
+t0 = 2045-1;               % start forecasting at 01/23/1997       
 
 % initialize the size of the matrix for min, max and median estimates
-SigmaF = zeros(T-rollWindow-1,12);  
-SminF  = zeros(T-rollWindow-1,12); 
-SmaxF  = zeros(T-rollWindow-1,12); 
+SigmaF = zeros(T-t0-1, 12);  
+SminF  = zeros(T-t0-1, 12); 
+SmaxF  = zeros(T-t0-1, 12); 
 
 %% Monte Carlo Simulator (Volatility Model)
 
 tic     % time convention    
-for t = 1:T-rollWindow-1                   
+for t = 1:1%T-t0-1                  
     propIndex = 1;           % index for tracking column position 
+    
+    % sanity checking for runtime process
+    if mod(t, 50) == 0
+        fprintf('t value is %d, %d to go...\n', t, T-t0-1-t);
+        toc
+    end
     
     for i = [1, 2, 3]        % index position of the 2y, 5y, 10y tenor
         
         % presample innovations (returns matrix)
-        r = returns(1:t+rollWindow, i);
+        r = returns(1:t+t0, i);
         
-        % fitting the conditional variance model GARCH to data 
-        % we surpress the display of outputs for each fit
-        EstMdl = estimate(model, r, 'options', options, 'Display', 'off');  
+        % fitting the conditional variance model to data 
+        % we suppress the display of outputs for each fit
+        EstMdl = estimate(Mdl2, r, 'Display', 'off');  
         
         % infer conditional variances from corresponding models
-        v0 = infer(EstMdl, r);
-               
-        rng default; % RNG control for reproducibility
+        v0 = infer(EstMdl, r);   
         
-        % simualte nTrials of the GARCH(1,1) model with horizon obs.
-        vSim = simulate(EstMdl, horizon, 'NumPaths', nTrials, 'E0', ...
-            r(end), 'V0', v0(end));
+        rng default             % For reproducibility
         
-        % sqrt to get conditional standard deviations
-        simSTD = sqrt(vSim);                                                
+        % standardize the simulated innovations 
+        res = r - EstMdl.Offset;
+        
+        % simulate nTrials of the conditional variance model
+        [vSim, pRets] = simulate(EstMdl, horizon, 'NumPaths', nTrials, ...
+            'E0', res(end), 'V0', v0(end));        
+        
+        % we take the square root of our conditional variance to 
+        % compute the standard deviation, a.ka. realized volatility                                    
+        vol = sqrt(vSim);
         
         % compute the average cond. variance across rows
-        SS = mean(simSTD, 2);                                               % creates a horizon-by-1 matrix
+        SS = mean(vol, 2);                                                  % creates a horizon-by-1 matrix
         
         %-------------- 95% confidence bounds ----------------
-        Smin = prctile(simSTD, 2.5, 2);                                     % calc. 2.5th percentile along rows
-        Smax = prctile(simSTD, 97.5, 2);                                    % calc. 97.5th percentile along rows
+        Smin = prctile(vol, 2.5, 2);                                        % calc. 2.5th percentile along rows
+        Smax = prctile(vol, 97.5, 2);                                       % calc. 97.5th percentile along rows
         %-----------------------------------------------------
         
         % iterate through the swap terms by modifying the index
-        for j=1:4        % mm = [63 126 252 504]         
-            SigmaF(t,propIndex) = mean(SS(1:mm(j)));                        % assign by tenor then term                                             
-            SminF(t,propIndex)  = mean(Smin(1:mm(j)));                      %    e.g. 2y3m, 2y6m, 2y1y, 2y2y
-            SmaxF(t,propIndex)  = mean(Smax(1:mm(j)));
+        for j=1:4        % mm = [64 127 253 505]         
+            SigmaF(t, propIndex) = mean(SS(1:mm(j)));                       % assign by tenor then term                                             
+            SminF(t, propIndex)  = mean(Smin(1:mm(j)));                     %    e.g. 2y3m, 2y6m, 2y1y, 2y2y
+            SmaxF(t, propIndex)  = mean(Smax(1:mm(j)));
             propIndex = propIndex + 1;                                      % increment the column index 
         end
         
     end
     
-    % sanity checking for runtime process
-    if mod(t, 50) == 0
-        fprintf('t value is %d ...\n', t);
-        toc
-    end
-    
+    % Values for checking against implied measures
+    disp('The realized vs implied volatility')
+    disp(swaps{t0+2, 1})
+    disp(SigmaF(1, :)*sqrt(252)*100) 
+    disp(iv{iv{:, 1} == swaps{t0+2, 1}, 2:end})
 end
-
-% approx. 4.5 hours in runtime for 10000 sims
-% approx. 15 minutes in runtime for 100 sims
 
 %% Normalzing GARCH Measures 
 
@@ -112,11 +118,11 @@ UB   = SmaxF*sqrt(252)*100;
 %--------------------------------------
 
 % new table names and dates for the forecasted region 
-newNames = ["USSV0C2Curncy", "USSV0F2Curncy", "USSV012Curncy",...
-    "USSV022Curncy", "USSV0C5Curncy", "USSV0F5Curncy", "USSV015Curncy",...
-    "USSV025Curncy", "USSV0C10Curncy", "USSV0F10Curncy", "USSV0110Curncy",...
-    "USSV0210Curncy"];
-newDates = swapData{rollWindow+2:end, 1};
+newNames = ["USSV0C2 CURNCY", "USSV0F2 CURNCY", "USSV012 CURNCY",...
+    "USSV022 CURNCY", "USSV0C5 CURNCY", "USSV0F5 CURNCY", "USSV015 CURNCY",...
+    "USSV025 CURNCY", "USSV0C10 CURNCY", "USSV0F10 CURNCY", "USSV0110 CURNCY",...
+    "USSV0210 CURNCY"];
+newDates = swaps{t0+2:end, 1};
 
 % Modifying matrix to table data structure
 SigmaFA = array2table(SigmaF, 'VariableNames', newNames);
