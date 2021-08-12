@@ -1,18 +1,12 @@
 % Generates graphs that pertain to displaying the variance risk premium
 
-clear; 
-
-load INIT root_dir
+clearvars -except root_dir;
 
 % loading in temp file for Swap IV, Treasury data, VIX data
-load DATA iv yeildCurve vix swaps fedfunds lowIR highIR
+load DATA iv yeildCurve vix swaps fedfunds lowIR highIR vrp
 
 % loading in temp file for GARCH forecasts
 load SigA SigA LB UB
-load FSigmaF SigmaFA LBFA UBFA
-
-% loading in VRP measures
-load VRP vrp
 
 
 %% Common global variables
@@ -82,10 +76,11 @@ fprintf('GARCH graphs were created.\n');
 
 %% (Figure 4) Variance Risk Premia 
 
-fig = figure('visible', 'on');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 for i = 1:4
+    
     % construct the names for each swaption tenor 
     swap2y  = strcat("USSV", terms(i), tenors(1), " CURNCY");
     swap5y  = strcat("USSV", terms(i), tenors(2), " CURNCY");
@@ -114,6 +109,7 @@ for i = 1:4
                  'Location', 'northwest');
     lgd.FontSize = 8;       % setting the font-size of the legend
     hold off; 
+    
 end
 
 exportgraphics(fig, 'Output/figure4.jpg');
@@ -138,7 +134,7 @@ fprintf('Autocorrelation graphs were created.\n');
 
 %% (Figure 6) Swaption Variance Risk Premia vs VIX 
 
-fig = figure('visible', 'off');                 % prevent display to MATLAB 
+fig = figure('visible', 'off');                % prevent display to MATLAB 
 set(gcf, 'Position', [100, 100, 1050, 850]);   % setting figure dimensions
 
 for i = 1:3

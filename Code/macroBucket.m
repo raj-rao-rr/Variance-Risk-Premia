@@ -1,16 +1,11 @@
 % Peform regression on macroeconomic variables 
 
-clear; 
-
-load INIT root_dir
+clearvars -except root_dir;
 
 % loading in economic and volatility data
-load DATA yeildCurve ecoMap ecoAnnouncement iv lowIR highIR
-load FILTER cleanEco ecoSTD25 ecoSTD75
+load DATA yeildCurve ecoMap ecoData iv lowIR highIR vrp ...
+    ecoSTD25 ecoSTD75
 load SigA SigA 
-
-% loading in VRP measures
-load VRP vrp
 
 % all output directories to export figures and files
 out_std_dir = "Output/macro-announcements/buckets/";
@@ -36,8 +31,8 @@ swap24m = {'USSV022 CURNCY', 'USSV025 CURNCY', 'USSV0210 CURNCY'};
 for event = eventList
     
     % filter the accompanying event for the economic deviation
-    ecoBin1 = ecoSTD25(ismember(ecoSTD25.Event, event), :);
-    ecoBin2 = ecoSTD75(ismember(ecoSTD75.Event, event), :);
+    ecoBin1 = ecoSTD25(ismember(ecoSTD25.NAME, event), :);
+    ecoBin2 = ecoSTD75(ismember(ecoSTD75.NAME, event), :);
     
     % find the intersection between date ranges of X and y variables
     targetDates1 = matchingError(ecoBin1, iv);
@@ -101,8 +96,8 @@ for event = eventList
     window = 1;     % window for computing difference 
     
     % filter the accompanying event for the economic deviation
-    ecoBin1 = ecoSTD25(ismember(ecoSTD25.Event, event), :);
-    ecoBin2 = ecoSTD75(ismember(ecoSTD75.Event, event), :);
+    ecoBin1 = ecoSTD25(ismember(ecoSTD25.NAME, event), :);
+    ecoBin2 = ecoSTD75(ismember(ecoSTD75.NAME, event), :);
     
     % find the intersection between date ranges of X and y variables
     targetDates1 = matchingError(ecoBin1, SigA);
@@ -166,8 +161,8 @@ for event = eventList
     window = 1;     % window for computing difference 
     
     % filter the accompanying event for the economic deviation
-    ecoBin1 = ecoSTD25(ismember(ecoSTD25.Event, event), :);
-    ecoBin2 = ecoSTD75(ismember(ecoSTD75.Event, event), :);
+    ecoBin1 = ecoSTD25(ismember(ecoSTD25.NAME, event), :);
+    ecoBin2 = ecoSTD75(ismember(ecoSTD75.NAME, event), :);
     
     % find the intersection between date ranges of X and y variables
     targetDates1 = matchingError(ecoBin1, vrp);
@@ -231,11 +226,11 @@ for event = eventList
     window = 1;     % window for computing difference 
     
     % filter the accompanying event for the economic deviation
-    filterEco = cleanEco(ismember(cleanEco.Event, event), :);
+    filterEco = ecoData(ismember(ecoData.NAME, event), :);
     
     % filter the accompanying event for the interest rate regime
-    ecoBin1 = filterEco(ismember(filterEco.DateTime, lowIR.DATE), :);
-    ecoBin2 = filterEco(ismember(filterEco.DateTime, highIR.DATE), :);
+    ecoBin1 = filterEco(ismember(filterEco.RELEASE_DATE, lowIR.DATE), :);
+    ecoBin2 = filterEco(ismember(filterEco.RELEASE_DATE, highIR.DATE), :);
     
     % find the intersection between date ranges of X and y variables
     targetDates1 = matchingError(ecoBin1, iv);
@@ -299,11 +294,11 @@ for event = eventList
     window = 1;     % window for computing difference 
     
     % filter the accompanying event for the economic deviation
-    filterEco = cleanEco(ismember(cleanEco.Event, event), :);
+    filterEco = ecoData(ismember(ecoData.NAME, event), :);
     
     % filter the accompanying event for the interest rate regime
-    ecoBin1 = filterEco(ismember(filterEco.DateTime, lowIR.DATE), :);
-    ecoBin2 = filterEco(ismember(filterEco.DateTime, highIR.DATE), :);
+    ecoBin1 = filterEco(ismember(filterEco.RELEASE_DATE, lowIR.DATE), :);
+    ecoBin2 = filterEco(ismember(filterEco.RELEASE_DATE, highIR.DATE), :);
     
     % find the intersection between date ranges of X and y variables
     targetDates1 = matchingError(ecoBin1, SigA);
@@ -367,11 +362,11 @@ for event = eventList
     window = 1;     % window for computing difference 
     
     % filter the accompanying event for the economic deviation
-    filterEco = cleanEco(ismember(cleanEco.Event, event), :);
+    filterEco = ecoData(ismember(ecoData.NAME, event), :);
     
     % filter the accompanying event for the interest rate regime
-    ecoBin1 = filterEco(ismember(filterEco.DateTime, lowIR.DATE), :);
-    ecoBin2 = filterEco(ismember(filterEco.DateTime, highIR.DATE), :);
+    ecoBin1 = filterEco(ismember(filterEco.RELEASE_DATE, lowIR.DATE), :);
+    ecoBin2 = filterEco(ismember(filterEco.RELEASE_DATE, highIR.DATE), :);
     
     % find the intersection between date ranges of X and y variables
     targetDates1 = matchingError(ecoBin1, vrp);

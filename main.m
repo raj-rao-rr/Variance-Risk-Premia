@@ -9,8 +9,9 @@ root_dir = pwd;
 cd(root_dir)            
 
 %% add paths to acess files
+
 addpath([root_dir filesep 'Code'])
-addpath([root_dir filesep 'Code/lib'])                                      % library of additonal functions
+addpath([root_dir filesep 'Code/lib'])                                      
 addpath([root_dir filesep 'Input'])
 addpath([root_dir filesep 'Temp'])
 addpath([root_dir filesep 'Output'])
@@ -20,6 +21,8 @@ addpath([root_dir filesep 'Output' filesep 'macro-announcements'])
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
     'regressions'])  
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
+    'responses'])  
+addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
     'buckets']) 
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
     'buckets' filesep 'iv']) 
@@ -28,14 +31,13 @@ addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
 addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
     'buckets' filesep 'vrp']) 
  
-% saving initialization of the rmain script
-save 'Temp/INIT.mat' root_dir
+%% running project scripts in synchronous order
 
-%% running project scripts in linear order 
-% run('dataReader.m');        
-% run('volGraphs.m');
-% run('forecastRV.m');
-% run('vrpCalculation.m');
-% run('vrpGraphs.m');
-% run('macroBucket.m');
-% run('macroRegress.m');
+% run('dataReader.m');                   % read in data from source
+% run('volGraphs.m');                    % produce preliminary vol graphs
+% run('forecastRV.m');                   % forecast realized volatility
+% run('vrpCalculation.m');               % compute the variance risk premia    
+% run('vrpGraphs.m');                    % produce graphs that use VRP measurements
+% run('macroBucket.m');                  % produce bar graphs for macro-responses
+% run('macroRegress.m');                 % perform regression on macro-surprises    
+% run('macroAggregate.m');               % examine reponse function to macro-surprises    

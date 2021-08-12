@@ -1,8 +1,6 @@
 % Reads in data files and stores these variables to a .mat file
 
-clear;
-
-load INIT root_dir
+clearvars -except root_dir;
 
 % creating certificate for web access, extending timeout to 10 seconds 
 o = weboptions('CertificateFilename',"", 'Timeout', 10);
@@ -148,83 +146,37 @@ end
 
 %% Economic Annoucements, taken from Bloomberg
 
-% run python script to clean economic variables with weird formats
-% e.g. Non-farm payrolls 735k -> Non-farm payrools 735
-!/apps/Anaconda3-2019.03/bin/python -b '/home/rcerxr21/DesiWork/VRP_GIT/Code/advancedReader.py'
-
 % manipulate economic data releases (Bloomberg - ECO)
-ecoData = readtable('cleanECO.csv', 'PreserveVariableNames', true);         % N by 21 matrix
+ecoData = readtable('bloomberg_economic_releases.csv', 'PreserveVariableNames', ...
+    true);         
 
-macroReleases = {'Retail Sales Advance MoM', 'Change in Nonfarm Payrolls', ...
-    'Conf. Board Consumer Confidence', 'CPI Ex Food and Energy MoM', ...
-    'Durable Goods Orders', 'Initial Jobless Claims', 'ISM Manufacturing', ...
-    'ISM Non-Manufacturing', 'GDP Annualized QoQ A', ...
-    'FOMC Rate Decision (Upper Bound)', ...
-    'Philadelphia Fed Business Outlook', 'PPI Ex Food and Energy MoM', ...
-    'U. of Mich. Sentiment P'};
+macroReleases = {'Adjusted Retail Sales Less Autos SA Monthly % Change', ...
+    'US Employees on Nonfarm Payrolls Total MoM Net Change SA', ...
+    'Conference Board Consumer Confidence SA 1985=100', ...
+    'US CPI Urban Consumers MoM SA', 'US Durable Goods New Orders Industries MoM SA', ...
+    'US Initial Jobless Claims SA', 'ISM Manufacturing PMI SA', ...
+    'ISM Manufacturing PMI SA', 'GDP US Chained 2012 Dollars QoQ SAAR', ...
+    'Federal Funds Target Rate - Upper Bound', ...
+    'Philadelphia Fed Business Outlook Survey Diffusion Index General Conditions', ...
+    'US PPI Final Demand Less Foods and Energy MoM SA', ...
+    'University of Michigan Consumer Sentiment Index'};
 
-ecoData = ecoData(ismember(ecoData.Event, macroReleases), :);
+ecoData = ecoData(ismember(ecoData.NAME, macroReleases), :);
 
 % remove insignificant events and non-times
-ecoData = ecoData(~isnat(ecoData{:, 'DateTime'}), :);
+ecoData = ecoData(~isnat(ecoData{:, 'RELEASE_DATE'}), :);
 
 % only select event dates with a median, actual, and std value  
-ecoData = ecoData(~isnan(ecoData.SurvM) & ~isnan(ecoData.Actual) & ...
-    ~isnan(ecoData.StdDev), :);
-
-% selecting essential columns from economic releases
-ecoData = ecoData(:, {'DateTime', 'Event', 'Ticker', 'Period', ...
-    'SurvM', 'Actual', 'Prior', 'BB_relevance_index', 'StdDev', 'Freq'});
-
-% re-map all StdDev values from 0 to a very small number e.g. 0.0001
-zeroTarget = ecoData(ecoData.StdDev == 0, :);
-reMap = zeros(size(zeroTarget, 1), 1);
-ecoData(ecoData.StdDev == 0, 'StdDev') = array2table(reMap + 0.0001);
-
-% compute zScore value by (Actual - survey Average) / Standard Deviation
-ecoData.Surprise = ecoData.Actual - ecoData.SurvM; 
-ecoData.SurpriseZscore = ecoData.Surprise ./ ecoData.StdDev; 
+ecoData = ecoData(~isnan(ecoData.BN_SURVEY_MEDIAN) & ~isnan(ecoData.ACTUAL_RELEASE) & ...
+    ~isnan(ecoData.FORECAST_STANDARD_DEVIATION), :);
 
 % creates a map (hashtable/dictionary) for corresponding economic annc.
-ecoMap = containers.Map(ecoData{:, 2}, ecoData{:, 3});
-
-%% Reduce economic calender data by removing duplicates on release date
-
-% store economic calender dates removing 
-ecoAnnouncement = table();
-
-for col = ecoMap.keys
-    
-    filterData = ecoData(ismember(ecoData.Event, col), :);
-    
-    % ---------------------------------------------------------
-    % remove weird dates that repeat (data-release lag) 
-    % e.g.
-    %    12/04/13 | New Home Sales | Sep | 425k
-    %    12/04/13 | New Home Sales | Oct | 429k
-    % ---------------------------------------------------------
-    [~, ind] = unique(filterData(:, 1), 'rows');
-    
-    duplicate_ind = setdiff(1:size(filterData, 1), ind);                     % duplicate indices
-    duplicate_val = filterData{duplicate_ind, 1};                            % duplicate values
-    
-    % check to see if duplicates were found, if so we remove them
-    % **we implement a computationally inefficient matrix build**
-    if ~isnan(duplicate_ind)
-        ecoAnnouncement = [ecoAnnouncement; filterData(~ismember(filterData{:, 1}, ...
-            duplicate_val), :)];
-    else
-        ecoAnnouncement = [ecoAnnouncement; filterData];
-    end
-end
-
-% sort values by datetime 
-ecoAnnouncement = sortrows(ecoAnnouncement, 1);
+ecoMap = containers.Map(ecoData{:, 'NAME'}, ecoData{:, 'TICKER'});
 
 %% Reduced economic calender data by forecast uncertainity (percentile)
 
 % #####################################################################
-% Note our uncertainity windows are subject to user given percentiles 
+% Note our uncertainity windows are subject to data sample 
 % #####################################################################
 
 % store economic calender dates for high/low forecast uncertainity 
@@ -235,15 +187,15 @@ ecoSTD75 = table();
 for event = ecoMap.values
 
     % filter data by macro economic event
-    filterData = ecoAnnouncement(ismember(ecoAnnouncement.Ticker, event), :);
+    filterData = ecoData(ismember(ecoData.NAME, event), :);
 
     % compute the top and bottom decile/quartiles forecast STD
-    pct25 = quantile(filterData.StdDev, .25);
-    pct75 = quantile(filterData.StdDev, .75);
+    pct25 = quantile(filterData.FORECAST_STANDARD_DEVIATION, .25);
+    pct75 = quantile(filterData.FORECAST_STANDARD_DEVIATION, .75);
 
     % bucket out economic figures according to std value
-    ecoBin2 = filterData((filterData.StdDev <= pct25), :);
-    ecoBin3 = filterData((filterData.StdDev >= pct75), :);
+    ecoBin2 = filterData((filterData.FORECAST_STANDARD_DEVIATION <= pct25), :);
+    ecoBin3 = filterData((filterData.FORECAST_STANDARD_DEVIATION >= pct75), :);
 
     % concat vertically all economic annoucments matching criteria
     ecoSTD25 = [ecoSTD25; ecoBin2];
@@ -267,7 +219,7 @@ sp500           = sp500(sp500{:, 1} < dateStop, :);
 %% Save all variables in *.mat file to be referenced
 
 save('Temp/DATA', 'iv', 'yeildCurve', 'lowIR', 'highIR', 'swaps', 'swapNames', ...
-    'ecoMap', 'ecoAnnouncement', 'sp500', 'fedfunds', 'recessions', 'vix', ...
-    'ecoSTD25', 'ecoSTD75')
+    'ecoMap', 'ecoData', 'sp500', 'fedfunds', 'recessions', 'vix', ...
+    'ecoSTD25', 'ecoSTD75');
 
 fprintf('Data has been downloaded.\n'); 
