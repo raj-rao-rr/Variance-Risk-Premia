@@ -1,6 +1,6 @@
 % Generates graphs that pertain to volatility, both implied and realized
 
-clear; 
+clearvars -except root_dir;
 
 % loading in temp file for Swap IV, Treasury data, VIX data
 load DATA iv yeildCurve vix

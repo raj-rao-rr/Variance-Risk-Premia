@@ -51,7 +51,7 @@ function modelTB = regression(X, y, method)
     yNames = diff.Properties.VariableNames(2:end);
     xNames = X.Properties.VariableNames(2:end);
     
-    % compute the linear regression itervally for each y-value, we assume
+    % compute the linear regression for each y-value, we assume
     % we make the assumption that the first column is our date index
     for index = 2:n
         
@@ -59,7 +59,7 @@ function modelTB = regression(X, y, method)
         mdl = fitlm(eco{:, 2:end}, diff{:, index});
      
         estimate = mdl.Coefficients.Estimate(2:end);     % Estimates
-        pValue = mdl.Coefficients.pValue(2:end);         % pValue
+        pValue = mdl.Coefficients.tStat(2:end);          % tStat
         
         % retrive the essential regression values
         rsquared = mdl.Rsquared.Ordinary;       % R-squared

@@ -32,7 +32,6 @@ Folder for storing data files after being read and cleaned of missing/obstructed
 - **DATA.mat** stores the downloaded data from input files (e.g. swap rates, swaption implied volatility)
 - **FSigmaF.mat** stores the daily GARCH(1,1) volatility forecasts, including lower and upper bounds 
 - **SigA.mat** stores the annualized GARCH(1,1) volatility forecasts, including 95% bounds
-
 - **cleanECO.csv** stores cleaned economic announcement data, storing strictly numerical values from Bloomberg announcements
 
 ### 3.4 	`/Output`
@@ -46,13 +45,13 @@ Folder and sub-folders are provided to store graphs and tables for forecasts, re
 ## 4	Running Code
 The following steps are necessary for gathering data, prior to executing the `main.m` file.
 
-Data Fields that are automatically updated from HTML connections
+**Data Fields that are automatically updated from HTML connections**
 1. Effective Federal Funds Rate, taken from FRED website (stored under variable `fedfunds`)
 2. NBER based Recession Indicators for the United States (USRECD), taken from FRED website (stored under variable `recessions`)
 3. CBOE Volatility Index: VIX, taken from FRED website (stored under variable `vix`)
 4. The U.S. Treasury Yield Curve: 1961 to the Present, taken from Federal Reserve website (stored under variable `yeildCurve`)
 
-Data Fields that are semi-manually updated
+**Data Fields that are semi-manually updated**
 1.	Login into your Bloomberg Professional Service account, you will need it to retrieve historical data. 
 2.	Open the following excel files `sp500.xlsx`, `swaptionIV.xlsx`, and `swapRates.xlsx` on your local machine. Go to the Bloomberg tab on Excel and click the **Refresh Worksheets** icon to update the Bloomberg formulas, populating the data fields. *Note if working on a separate server or cluster, these refreshed worksheets will need to be transferred to the designated workstation*
 3.	On your Bloomberg terminal go to the ECO tab and begin downloading the requested economic announcement data to a `.csv` file name _**ecoRelease.csv**_. Due to the interval restrictions imposed by Bloomberg for the exportation of the data, you will need to export multiple times per defined intervals.

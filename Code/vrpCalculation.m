@@ -1,12 +1,12 @@
 % Calculates the variance risk premium (VRP) and stores these values to a .mat file 
 
-clear; 
+clearvars -except root_dir;
 
-% loading in temp file for Swap IV, Treasury data, VIX data
+% loading in Swaption IV
 load DATA iv
 
-% loading in temp file for GARCh forecasts
-load SigA SigA LB UB
+% loading in temp file for GARCH forecasts
+load SigA SigA
 
 
 %% Common global variables
@@ -35,6 +35,6 @@ vrp.date = date;
 % move the orientation of the date column to first column position
 vrp = movevars(vrp, 'date', 'Before', vrp.Properties.VariableNames{1});
 
-save Temp/VRP.mat vrp
+save('Temp/DATA.mat', 'vrp', '-append')
 
 fprintf('Variance Risk Premium measures have been calculated.\n');
