@@ -32,12 +32,14 @@ Folder for storing data files after being read and cleaned of missing/obstructed
 
 ### 3.4 	`/Output`
 Folder and sub-folders are provided to store graphs and tables for forecasts, regressions, etc.  
-- **/.../autocorrelations/** stores all autocorrelation figures associated with each swaption security's VRP measure. For a detailed overview of the code responsible for constructing these measures refer to `vrpGraphs.m` under the header **Figure (5) Autocorrelation Function for Variance Risk Premia **.
-- **/.../garch-forecasts/** stores all GARCH forecasts for each swap tenor against implied volatility levels, for each term. For a detailed overview of the code responsible for constructing these measures refer to `vrpGraphs.m` under the header **Figure (3) Swaption Implied Vol vs. Forecasted Real Vol **.
-- **/.../macro-announcements/** stores .csv files that perform analysis against economic announcements (e.g., CPI) 
-  - **/.../buckets/** stores graphs of changes in volatility measures bucketed by the standard deviation of each economic forecast / interest rate regime. For more detailed overview of the code responsible for constructing these measures refer to `macroBucket.m`. 
-  - **/.../regressions/** stores coefficients for changes in volatility measures regressed on macro-economic announcements. For more detailed overview of the code responsible for constructing these measures refer to `macroRegress.m`.   
-  - **/.../responses/** stores graphs illustrating cumulative returns against macroeconomic variables. For more detailed overview of the code responsible for constructing these measures refer to `macroAggregate.m`.   
+- `/.../autocorrelations/` stores all autocorrelation figures associated with each swaption security's VRP measure. For a detailed overview of the code responsible for constructing these measures refer to `vrpGraphs.m` under the header **Figure (5) Autocorrelation Function for Variance Risk Premia**.
+
+- `/.../garch-forecasts/` stores all GARCH forecasts for each swap tenor against implied volatility levels, for each term. For a detailed overview of the code responsible for constructing these measures refer to `vrpGraphs.m` under the header **Figure (3) Swaption Implied Vol vs. Forecasted Real Vol**.
+
+- `/.../macro-announcements/` stores .csv files that perform analysis against economic announcements (e.g., CPI) 
+  - `/.../buckets/` stores graphs of changes in volatility conditioned by the standard deviation of each economic forecast and interest rate regime. For more detailed overview of the code responsible for constructing these measures refer to `macroBucket.m`. 
+  - `/.../regressions/` stores coefficients for changes in volatility measures regressed on macro-economic announcements. For more detailed overview of the code responsible for constructing these measures refer to `macroRegress.m`.   
+  - `/.../responses/` stores graphs illustrating cumulative returns against macroeconomic variables. For more detailed overview of the code responsible for constructing these measures refer to `macroAggregate.m`.   
 
 ## 4	Running Code
 The following steps are necessary for gathering data, prior to executing the `main.m` file.
