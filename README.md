@@ -54,7 +54,7 @@ The following steps are necessary for gathering data, prior to executing the `ma
 **Data Fields that are semi-manually updated**
 1.	Login into your Bloomberg Professional Service account, you will need it to retrieve historical data. 
 2.	Open the following excel files `sp500.xlsx`, `swaptionIV.xlsx`, and `swapRates.xlsx` on your local machine. Go to the Bloomberg tab on Excel and click the **Refresh Worksheets** icon to update the Bloomberg formulas, populating the data fields. *Note if working on a separate server or cluster, these refreshed worksheets will need to be transferred to the designated workstation*
-3.	On your Bloomberg terminal go to the ECO tab and begin downloading the requested economic announcement data to a `.csv` file name _**ecoRelease.csv**_. Due to the interval restrictions imposed by Bloomberg for the exportation of the data, you will need to export multiple times per defined intervals.
+3.	To update the data series entitled `bloomberg_economic_releases.csv`, refer this [repo](https://github.com/raj-rao-rr/BBG-ECO-EXCEL). Simply transfer the Output series from BBG-ECO-EXCEL project to the Input folder of this repo. 
 4. Once all data has been updated you are free to run the entire project base. You may opt to run the `main.m` file in a Matlab interactive session or via terminal on your local machine or HPC cluster.
 
     ```
