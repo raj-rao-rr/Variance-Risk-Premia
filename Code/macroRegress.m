@@ -1,4 +1,4 @@
-% Peform regression on macroeconomic variables 
+% Regress change in implied volatilites against macroeconomic variables 
 
 clearvars -except root_dir;
 
@@ -11,6 +11,7 @@ out_reg_dir = 'Output/macro-announcements/regressions/';
 
 % some global variables
 eventList = ecoMap.keys;
+
 
 %% Macro Regressions on Implied Volatility y = β + β*S + ϵ
 
