@@ -23,20 +23,20 @@ names = vrp.Properties.VariableNames(2:end-1);
 % incrementing across each tenor (e.g. 2y, 5y, 10y)
 for i = 1:3
     
-    fig = figure('visible', 'off');                                         % prevent display to MATLAB
-    set(gcf, 'Position', [100, 100, 1250, 900]);                            % setting figure dimensions
+    fig = figure('visible', 'off');                                         
+    set(gcf, 'Position', [100, 100, 1250, 900]);                            
     
     % incrementing across each term (e.g. 3m, 24m)
     for j = 1:4
         
         % naming convention for swap securities 
         index = strcat("USSV", terms(j), tenors(i), " CURNCY");
-        date = intersect(iv{:,1}, SigA{:,1});                               % defines the date index for vol forecasts
+        date = intersect(iv{:,1}, SigA{:,1});                                         % defines the date index for vol forecasts
         
         % GARCH annualized measures 
-        upper = UB{ismember(UB{:, 1}, date), index};                        % 97.5th percentile GARCH sim
-        mid = SigA{ismember(SigA{:, 1}, date), index};                      % mean / 50th percentile
-        lower = LB{ismember(LB{:, 1}, date), index};                        % 2.5th percentile GARCH sim
+        upper = UB{ismember(UB{:, 1}, date), index};                                  % 97.5th percentile GARCH sim
+        mid = SigA{ismember(SigA{:, 1}, date), index};                                % mean / 50th percentile
+        lower = LB{ismember(LB{:, 1}, date), index};                                  % 2.5th percentile GARCH sim
         
         % implied volatility data (black-scholes)  
         vol = iv{ismember(iv{:, 1}, date), index};                                            
@@ -63,11 +63,11 @@ for i = 1:3
         xticks(dateV)
         datetick('x','yyyy', 'keepticks', 'keeplimits');
         
-        title(strcat("Tenor ", tenors(i), "Y, Term ", termsID(j)));         % specify legend to match tenor and term
-        hold off; legend(h(2:end), 'Location', 'northwest');                % specify the legend displays
+        title(strcat("Tenor ", tenors(i), "Y, Term ", termsID(j)));                   % specify legend to match tenor and term
+        hold off; legend(h(2:end), 'Location', 'northwest');                          % specify the legend displays
     end
     
-    outputFileName = strcat("Output/garch-forecasts/Tenor", ...             % the name of the output file 
+    outputFileName = strcat("Output/garch-forecasts/Tenor", ...                       % the name of the output file 
             tenors(i), "y.png"); 
     exportgraphics(fig, outputFileName);
 end
@@ -125,7 +125,7 @@ for n = 1:length(names)
     autocorr(vrp{:, names(n)}, 'NumLags', 50);  
     
     outputFileName = strcat("Output/autocorrelations/", ...
-        names(n), ".jpg");                                                  % the name of the output file 
+        names(n), ".jpg");                                                  
           
     exportgraphics(fig, outputFileName);
 end

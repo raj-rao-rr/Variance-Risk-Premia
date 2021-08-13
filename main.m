@@ -2,13 +2,13 @@
 
 clear; clc;
 
-%% set the primary directory to work in  
+%% set the primary working directory
 root_dir = pwd;
 
 % enter the root directory 
 cd(root_dir)            
 
-%% add paths to acess files
+%% add paths to acess files by naming convention 
 
 addpath([root_dir filesep 'Code'])
 addpath([root_dir filesep 'Code/lib'])                                      
@@ -33,11 +33,11 @@ addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
  
 %% running project scripts in synchronous order
 
-% run('dataReader.m');                   % read in data from source
-% run('volGraphs.m');                    % produce preliminary vol graphs
-% run('forecastRV.m');                   % forecast realized volatility
-% run('vrpCalculation.m');               % compute the variance risk premia    
-% run('vrpGraphs.m');                    % produce graphs that use VRP measurements
-% run('macroBucket.m');                  % produce bar graphs for macro-responses
-% run('macroRegress.m');                 % perform regression on macro-surprises    
-% run('macroAggregate.m');               % examine reponse function to macro-surprises    
+run('dataReader.m');            % read in data from source
+run('volGraphs.m');             % produce preliminary vol graphs
+run('forecastRV.m');            % forecast realized volatility
+run('vrpCalculation.m');        % compute the variance risk premia    
+run('vrpGraphs.m');             % produce graphs that use VRP measurements
+run('macroBucket.m');           % produce bar graphs for macro-responses
+run('macroRegress.m');          % perform regression on macro-surprises    
+run('macroAggregate.m');        % examine reponse function to macro-surprises    

@@ -1,4 +1,4 @@
-% Perform Cummulative return analysis versus macroeconomic variables 
+% Perform cumulative return analysis versus macroeconomic variables 
 
 clearvars -except root_dir;
 

@@ -1,4 +1,4 @@
-% Peform regression on macroeconomic variables 
+% Construct macro-response buckets according to rate regime / forecast STD
 
 clearvars -except root_dir;
 
@@ -24,6 +24,7 @@ swap3m = {'USSV0C2 CURNCY', 'USSV0C5 CURNCY', 'USSV0C10 CURNCY'};
 swap6m = {'USSV0F2 CURNCY', 'USSV0F5 CURNCY', 'USSV0F10 CURNCY'};
 swap12m = {'USSV012 CURNCY', 'USSV015 CURNCY', 'USSV0110 CURNCY'};
 swap24m = {'USSV022 CURNCY', 'USSV025 CURNCY', 'USSV0210 CURNCY'};
+
 
 %% IV: Construct Standard Deviation Bucket graphs, by swap term and tenor 
 
