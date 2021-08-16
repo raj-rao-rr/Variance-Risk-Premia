@@ -65,4 +65,4 @@ The following steps are necessary for gathering data, prior to executing the `ma
 * Work on potentially updating Bloomberg data without manually opening files.  
 
 ## 6	Contributors
-* [Rajesh Rao](https://github.com/Raj9898) (Sr. Research Analyst)
+* [Rajesh Rao](https://github.com/raj-rao-rr) (Sr. Research Analyst)
