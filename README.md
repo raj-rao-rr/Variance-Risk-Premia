@@ -45,10 +45,10 @@ Folder and sub-folders are provided to store graphs and tables for forecasts, re
 The following steps are necessary for gathering data, prior to executing the `main.m` file.
 
 **Data Fields that are automatically updated from HTML connections**
-1. [Effective Federal Funds Rate](https://fred.stlouisfed.org/series/FEDFUNDS), taken from FRED website (stored under variable `fedfunds`)
-2. [NBER based Recession Indicators for the United States (USRECD)](https://fred.stlouisfed.org/series/USRECD), taken from FRED website (stored under variable `recessions`)
-3. [CBOE Volatility Index: VIX](https://fred.stlouisfed.org/series/VIXCLS), taken from FRED website (stored under variable `vix`)
-4. [The U.S. Treasury Yield Curve: 1961 to the Present](https://www.federalreserve.gov/pubs/feds/2006/200628/200628abs.html), taken from Federal Reserve website (stored under variable `yeildCurve`)
+* [Effective Federal Funds Rate](https://fred.stlouisfed.org/series/FEDFUNDS), taken from FRED website (stored under variable `fedfunds`)
+* [NBER based Recession Indicators for the United States (USRECD)](https://fred.stlouisfed.org/series/USRECD), taken from FRED website (stored under variable `recessions`)
+* [CBOE Volatility Index: VIX](https://fred.stlouisfed.org/series/VIXCLS), taken from FRED website (stored under variable `vix`)
+* [The U.S. Treasury Yield Curve: 1961 to the Present](https://www.federalreserve.gov/pubs/feds/2006/200628/200628abs.html), taken from Federal Reserve website (stored under variable `yeildCurve`)
 
 **Data Fields that are semi-manually updated**
 1.	Login into your Bloomberg Professional Service account, you will need it to retrieve historical data. 
