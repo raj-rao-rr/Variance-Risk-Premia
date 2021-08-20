@@ -48,7 +48,7 @@ The following steps are necessary for gathering data, prior to executing the `ma
 * [Effective Federal Funds Rate](https://fred.stlouisfed.org/series/FEDFUNDS), taken from FRED website (stored under variable `fedfunds`)
 * [NBER based Recession Indicators for the United States (USRECD)](https://fred.stlouisfed.org/series/USRECD), taken from FRED website (stored under variable `recessions`)
 * [CBOE Volatility Index: VIX](https://fred.stlouisfed.org/series/VIXCLS), taken from FRED website (stored under variable `vix`)
-* [The U.S. Treasury Yield Curve: 1961 to the Present](https://www.federalreserve.gov/pubs/feds/2006/200628/200628abs.html), taken from Federal Reserve website (stored under variable `yeildCurve`)
+* [The U.S. Treasury Yield Curve: 1961 to the Present](https://www.federalreserve.gov/pubs/feds/2006/200628/200628abs.html), taken from Federal Reserve website and stored under the `yeildCurve.csv` file in the `Input` folder
 
 **Data Fields that are semi-manually updated**
 1.	Login into your Bloomberg Professional Service account, you will need it to retrieve historical data. 
