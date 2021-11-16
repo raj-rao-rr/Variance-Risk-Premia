@@ -12,9 +12,11 @@ load DATA swaps iv
 returns = zeros(T-1, N-1);      % initialize the size of return matrix 
 
 % iterate through each swap rate
-for n = 1:N-1                                                               
+for n = 1:N-1  
+    
     % compute the log return for each term 
     returns(:, n) = log(swaps{2:end, n+1}) - log(swaps{1:end-1, n+1});
+    
 end  
 
 %% Volatility Model Initialization
@@ -30,7 +32,7 @@ Mdl2 = egarch('GARCHLags', 1, 'ARCHLags', 1, 'LeverageLags', 1, ...
     'Distribution', 'Gaussian');
 Mdl3 = gjr('GARCHLags', 1, 'ARCHLags', 1, 'Distribution', 'Gaussian');
 
-nTrials = 1000;                    % number of independent random trials
+nTrials = 100;                     % number of independent random trials
 horizon = 506;                     % VaR forecast horizon (# observations)
 
 m1 = [3, 6, 12, 24];               % swap terms 3m; 6m; 12m; 24m
@@ -45,14 +47,15 @@ SmaxF  = zeros(T-t0-1, 12);
 
 %% Monte Carlo Simulator (Volatility Model)
 
+fprintf('2. Perform Monte Carlo SImulator for GARCH vol model\n')
+
 tic     % time convention    
 for t = 1:T-t0-1                  
     propIndex = 1;           % index for tracking column position 
     
     % sanity checking for runtime process
-    if mod(t, 10) == 0
-        fprintf('t value is %d, %d timestamps to go...\n', t, T-t0-1-t);
-        toc
+    if mod(t, 100) == 0
+        fprintf('\tt value is %d, %d timestamps to go...\n', t, T-t0-1-t);
     end
     
     for i = [1, 2, 3]        % index position of the 2y, 5y, 10y tenor
@@ -101,32 +104,11 @@ for t = 1:T-t0-1
             propIndex = propIndex + 1;                                       
         end
                 
-%         % show forecast vs infered volatility for set 
-%         % (used strictly for debugging purposes for single iterations)
-%         fig = figure('visible', 'on');                                         
-%         set(gcf, 'Position', [100, 100, 1050, 900]);                            
-%     
-%         hold on;
-%         title(strcat("Working on column ", int2str(i), " of swap terms"))
-%         plot(swaps{1:t+t0, 1}, sqrt(v0)*sqrt(252)*100, 'color', 'blue', ...
-%             'DisplayName', 'Infered Volatility')
-%         plot(swaps{t+t0+1:t+t0+mm(4), 1}, Smin*sqrt(252)*100, 'color', ...
-%             'black', 'DisplayName', '95% Upper')
-%         plot(swaps{t+t0+1:t+t0+mm(4), 1}, Smax*sqrt(252)*100, 'color', ...
-%             'black', 'DisplayName', '95% Lower')
-%         plot(swaps{t+t0+1:t+t0+mm(4), 1}, SS*sqrt(252)*100, 'color', ...
-%             'red', 'LineWidth', 2, 'DisplayName', 'Simulated Volatility')
-%         hold off
-%         legend show
         
     end
     
-%     % checking forecast volatility figures against implied vol measures
-%     disp('The realized vs implied volatility')
-%     disp(swaps{t0+2, 1})
-%     disp(SigmaF(1, :)*sqrt(252)*100) 
-%     disp(iv{iv{:, 1} == swaps{t0+2, 1}, 2:end})
 end
+toc
 
 %% Normalzing GARCH Measures 
 
@@ -167,4 +149,4 @@ save('Temp/FSigmaF.mat','SigmaFA','LBFA','UBFA');
 fprintf('Daily vol file has been created.\n');
 
 save('Temp/SigA.mat','SigA','LB','UB');
-fprintf('Annualized vol file has been created.\n');
+fprintf('2.5 Annualized vol file has been created.\n');

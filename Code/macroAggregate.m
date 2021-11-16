@@ -194,6 +194,4 @@ for event = ecoMap.keys
 
 end
 
-%% 
-
 fprintf('All macro-aggregated series are completed.\n')

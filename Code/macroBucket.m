@@ -423,6 +423,4 @@ for event = eventList
     exportgraphics(fig, exName{:});
 end
 
-%%
-
-fprintf('Construct bucket graphs by swap term and tenor.\n')
+fprintf('4. Construct bucket graphs by swap term and tenor.\n')

@@ -222,4 +222,4 @@ save('Temp/DATA', 'iv', 'yeildCurve', 'lowIR', 'highIR', 'swaps', 'swapNames', .
     'ecoMap', 'ecoData', 'sp500', 'fedfunds', 'recessions', 'vix', ...
     'ecoSTD25', 'ecoSTD75');
 
-fprintf('Data has been downloaded.\n'); 
+fprintf('1. Data has been downloaded.\n'); 

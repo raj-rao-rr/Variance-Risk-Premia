@@ -33,6 +33,7 @@ addpath([root_dir filesep 'Output' filesep 'macro-announcements' filesep ...
  
 %% running project scripts in synchronous order
 
+tic
 run('dataReader.m');            % read in data from source
 run('volGraphs.m');             % produce preliminary vol graphs
 run('forecastRV.m');            % forecast realized volatility
@@ -41,3 +42,4 @@ run('vrpGraphs.m');             % produce graphs that use VRP measurements
 run('macroBucket.m');           % produce bar graphs for macro-responses
 run('macroRegress.m');          % perform regression on macro-surprises    
 run('macroAggregate.m');        % examine reponse function to macro-surprises    
+toc

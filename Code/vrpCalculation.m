@@ -37,4 +37,4 @@ vrp = movevars(vrp, 'date', 'Before', vrp.Properties.VariableNames{1});
 
 save('Temp/DATA.mat', 'vrp', '-append')
 
-fprintf('Variance Risk Premium measures have been calculated.\n');
+fprintf('3. Variance Risk Premium measures have been calculated.\n');

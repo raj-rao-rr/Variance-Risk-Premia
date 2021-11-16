@@ -44,11 +44,6 @@ writetable(tb1, strcat(out_reg_dir, 'regressImpVol.csv'));
 
 %% Macro Regressions on Implied Volatility y = β + β*S + β*U25 + β*U25*S + ϵ
 
-% % compute pivot table with Surprise Z-score and restricted events
-% sig_events = {'Change in Nonfarm Payrolls', 'ISM Manufacturing', ...
-%     'PPI Ex Food and Energy MoM', 'Retail Sales Advance MoM'};
-% filterEco = ecoData(ismember(ecoData.Event, sig_events), :);
-
 % comptue the beta components for each event 
 beta1 = pivotTable(ecoData, 'SURPRISES', 'RELEASE_DATE', 'NAME');
 beta2 = pivotTable(ecoData, 'FORECAST_STANDARD_DEVIATION', 'RELEASE_DATE', 'NAME');
@@ -88,11 +83,6 @@ writetable(tb1, strcat(out_reg_dir, 'regressImpVolUncertainty_25.csv'));
 
 %% Macro Regressions on Implied Volatility y = β + β*S + β*U75 + β*U75*S + ϵ
 
-% % compute pivot table with Surprise Z-score and restricted events
-% sig_events = {'Change in Nonfarm Payrolls', 'ISM Manufacturing', ...
-%     'PPI Ex Food and Energy MoM', 'Retail Sales Advance MoM'};
-% filterEco = ecoData(ismember(ecoData.Event, sig_events), :);
-
 % comptue the beta components for each event 
 beta1 = pivotTable(ecoData, 'SURPRISES', 'RELEASE_DATE', 'NAME');
 beta2 = pivotTable(ecoData, 'FORECAST_STANDARD_DEVIATION', 'RELEASE_DATE', 'NAME');
@@ -130,6 +120,4 @@ tb1 = regression([beta1, beta2(:, 2:end), beta3(:, 2:end)], iv, 'diff');
 % write regression coeffcients to table
 writetable(tb1, strcat(out_reg_dir, 'regressImpVolUncertainty_75.csv'));
 
-%%
-
-fprintf('All regressions are completed.\n')
+fprintf('5. All regressions are completed.\n')

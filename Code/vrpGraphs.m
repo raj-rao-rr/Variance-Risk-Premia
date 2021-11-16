@@ -72,8 +72,6 @@ for i = 1:3
     exportgraphics(fig, outputFileName);
 end
 
-fprintf('GARCH graphs were created.\n');
-
 %% (Figure 4) Variance Risk Premia 
 
 fig = figure('visible', 'off');                % prevent display to MATLAB 
@@ -113,7 +111,6 @@ for i = 1:4
 end
 
 exportgraphics(fig, 'Output/figure4.jpg');
-fprintf('Variance Risk Premia graph was created.\n');
 
 %% (Figure 5) Autocorrelation Function for Variance Risk Premia 
 
@@ -129,8 +126,6 @@ for n = 1:length(names)
           
     exportgraphics(fig, outputFileName);
 end
-
-fprintf('Autocorrelation graphs were created.\n');
 
 %% (Figure 6) Swaption Variance Risk Premia vs VIX 
 
@@ -165,7 +160,6 @@ for i = 1:3
 end
 
 exportgraphics(fig, 'Output/figure6.jpg');
-fprintf('VRP vs. VIX graphs were created.\n');
 
 %% (Figure 8) Cross-Section of Variance Risk Premia by Subsamples
 
@@ -218,7 +212,6 @@ title('Full Subsample'); xlabel('Tenor (in years)');
 legend('location', 'best');
 
 exportgraphics(fig, 'Output/figure8.jpg');
-fprintf('Cross-Section of Variance Risk Premia were created.\n');
 
 %% (Figure 9) Term Structure of Variance Risk Premia by Subsamples
 
@@ -261,4 +254,3 @@ title('Full Subsample'); xlabel('Term (in months)');
 legend();
 
 exportgraphics(fig, 'Output/figure9.jpg');
-fprintf('Term Structure of Variance Risk Premia was created.\n');

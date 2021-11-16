@@ -56,7 +56,6 @@ for i = 1:4
 end
 
 exportgraphics(fig, 'Output/figure1.jpg');
-fprintf('Swaption volatility graph was created.\n');
 
 %% (Figure 2) Cross Section of Swaption Implied Volatilities
 
@@ -99,7 +98,6 @@ for i = 1:4
 end
 
 exportgraphics(fig, 'Output/figure13.jpg');
-fprintf('VIX comparison graphs were created.\n');
 
 %% (Figure 7) Swaption Implied Vol Structural Breaks 
 
